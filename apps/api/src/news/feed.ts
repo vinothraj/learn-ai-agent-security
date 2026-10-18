@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import { assertPublicHttpsUrl, type Lookup } from '../net';
 import { decodeEntities, stripHtml } from './text';
 
 /** Some feeds entity-encode their HTML (&lt;p&gt;), so decode first, then strip tags. */
@@ -66,16 +67,33 @@ export interface FetchResult {
   lastModified?: string | null;
 }
 
-/** HTTPS only, bounded time and size, conditional requests so unchanged feeds cost nothing. */
-export async function fetchFeed(url: string, prev: { etag: string | null; lastModified: string | null }): Promise<FetchResult> {
-  if (!url.startsWith('https://')) throw new Error('only https feeds are allowed');
+const MAX_REDIRECTS = 3;
+
+/**
+ * HTTPS only, public hosts only (SSRF guard on every redirect hop), bounded time and size,
+ * conditional requests so unchanged feeds cost nothing.
+ */
+export async function fetchFeed(
+  url: string,
+  prev: { etag: string | null; lastModified: string | null },
+  lookup?: Lookup,
+): Promise<FetchResult> {
   const headers: Record<string, string> = { 'User-Agent': USER_AGENT, Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' };
   if (prev.etag) headers['If-None-Match'] = prev.etag;
   if (prev.lastModified) headers['If-Modified-Since'] = prev.lastModified;
-  const res = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
+  let target = url;
+  let res: Response | null = null;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertPublicHttpsUrl(target, lookup);
+    res = await fetch(target, { headers, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const location = res.status >= 300 && res.status < 400 && res.status !== 304 ? res.headers.get('location') : null;
+    if (!location) break;
+    target = new URL(location, target).toString();
+    res = null;
+  }
+  if (!res) throw new Error('too many redirects');
   if (res.status === 304) return { status: 'not-modified' };
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  if (!res.url.startsWith('https://')) throw new Error('feed redirected to a non-https URL');
   const len = Number(res.headers.get('content-length') ?? 0);
   if (len > MAX_BYTES) throw new Error('feed too large');
   const buf = await res.arrayBuffer();

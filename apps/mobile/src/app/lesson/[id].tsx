@@ -2,7 +2,6 @@ import { contentPack, flashcardsByLesson, lessonById } from '@laas/content';
 import { dayKey, quizXp, scoreQuiz, XP_RULES, type EvidenceLevel } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import * as WebBrowser from 'expo-web-browser';
 import {
   CircleCheck,
   ExternalLink,
@@ -28,6 +27,7 @@ import { useSettings } from '@/state/settings';
 import { useStudySession } from '@/state/tracker';
 import { useHaptics, useTheme } from '@/theme/ThemeProvider';
 import { radius, space } from '@/theme/tokens';
+import { openExternal } from '@/lib/links';
 
 const EVIDENCE_LABEL: Record<EvidenceLevel, string> = {
   established: 'Established practice',
@@ -275,7 +275,7 @@ export default function LessonPlayer() {
               <Pressable
                 key={r.url}
                 accessibilityRole="link"
-                onPress={() => WebBrowser.openBrowserAsync(r.url)}
+                onPress={() => openExternal(r.url)}
                 style={{
                   flexDirection: 'row',
                   gap: space.md,

@@ -196,6 +196,7 @@ export function Chip({
       accessibilityRole={onPress ? 'button' : 'text'}
       accessibilityState={{ selected }}
       disabled={!onPress}
+      hitSlop={4} // 40dp chip + 4dp each side = 48dp touch target
       onPress={() => {
         haptic('select');
         onPress?.();

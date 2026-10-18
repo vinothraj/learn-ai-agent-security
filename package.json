@@ -15,9 +15,13 @@
     "validate:content": "npm run validate --workspace packages/content",
     "check": "npm run typecheck && npm run test && npm run validate:content",
     "api": "npm run dev --workspace apps/api",
-    "admin": "npm run dev --workspace apps/admin"
+    "admin": "npm run dev --workspace apps/admin",
+    "audit:deps": "node scripts/audit.mjs"
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

@@ -5,6 +5,7 @@ import { HttpError, parse, requireAuth, requireRole } from '../http';
 import { getSource, ingestSource } from '../news/ingest';
 import { CATEGORY_INFO } from '../news/mapping';
 import { CATEGORIES } from '../news/text';
+import { checkUrlShape } from '../net';
 import { notifyTopic, type PushSender } from '../push';
 import { audit } from '../services';
 
@@ -25,7 +26,17 @@ const Id = z.object({ id: z.uuid() });
 const domain = z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i);
 const SourceCreate = z.strictObject({
   name: z.string().trim().min(2).max(80),
-  feedUrl: z.url({ protocol: /^https$/ }),
+  feedUrl: z.url({ protocol: /^https$/ }).refine(
+    (u) => {
+      try {
+        checkUrlShape(u);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Feed URL must be a public https address' },
+  ),
   publisher: z.string().trim().min(2).max(80),
   allowedDomains: z.array(domain).min(1).max(10),
   trust: z.enum(['official', 'community', 'research']),

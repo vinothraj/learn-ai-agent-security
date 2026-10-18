@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { BadgeCheck, ExternalLink, Quote, ShieldAlert, Sparkles, TriangleAlert } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { relativeDate, type NewsArticle } from '@/state/news';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, space } from '@/theme/tokens';
+import { openExternal } from '@/lib/links';
 import { Card, Row, T, Tag } from './ui';
 
 /** One article. The source's words and our interpretation are visually and textually separated. */
@@ -60,7 +60,7 @@ export function NewsCard({ a, compact }: { a: NewsArticle; compact?: boolean }) 
         </View>
       ) : null}
       <Row style={{ flexWrap: 'wrap', gap: space.md }}>
-        <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(a.url)} hitSlop={8} style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+        <Pressable accessibilityRole="link" onPress={() => openExternal(a.url)} hitSlop={8} style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
           <ExternalLink size={14} color={theme.accent} />
           <T v="label" color={theme.accent}>
             Read original

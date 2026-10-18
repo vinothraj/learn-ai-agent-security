@@ -46,7 +46,12 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   domain-vocabulary on-topic gate, deterministic refusals, `lessonAnswer`. Routes: tutor, interview feedback,
   quiz drafts → `ai_suggestions` (four-eyes review), news summary drafts (`aiDrafted` → origin `ai`), usage.
   Mobile `/tutor` (offline lesson answers; AI when `features.ai`), opt-in AI interview feedback. Admin "AI drafts".
-- **Next: Phase 11.** Hardening: security review, accessibility audit, performance, widget + app shortcuts, coverage.
+- **Phase 11 (hardening): in progress.** Done: SSRF guard for feeds (`net.ts`, every redirect hop checked),
+  feed URL shape validation, https-only `openExternal`, admin production CSP (vite plugin), CI security job
+  (`npm run audit:deps` with expiring allowlist for build-only braces/node-forge; gitleaks), uuid override,
+  mobile vitest + WCAG contrast test (all modes/accents pass AA), chip touch targets 48dp, /android /ios ignored.
+  Left: app shortcuts config plugin, home-screen widget (react-native-android-widget; needs EAS build to verify),
+  docs/security.md (ASVS checklist), performance pass, coverage reporting.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout

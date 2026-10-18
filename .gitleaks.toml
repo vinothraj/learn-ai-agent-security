@@ -1,0 +1,15 @@
+# Secret scanning (CI). Extends the default rules; only clearly fake development values are allowed.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Development-only defaults and test fixtures"
+regexes = [
+  '''dev-only-[a-z-]*[0-9a-f]+''',
+  '''sk-test''',
+  '''ExponentPushToken\[[a-z]+x+\]''',
+]
+paths = [
+  '''(^|/)test/.*\.test\.ts$''',
+  '''(^|/)src/.*\.test\.ts$''',
+]

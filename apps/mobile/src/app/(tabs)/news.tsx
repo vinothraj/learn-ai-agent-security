@@ -1,7 +1,6 @@
 import { contentPack, lessonById } from '@laas/content';
 import { pickDaily } from '@laas/shared';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { ExternalLink, Info, RefreshCw, ShieldAlert } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -12,6 +11,7 @@ import { relativeDate, useNews } from '@/state/news';
 import { useProgress } from '@/state/progress';
 import { useStudySession } from '@/state/tracker';
 import { useTheme } from '@/theme/ThemeProvider';
+import { openExternal } from '@/lib/links';
 
 function Briefings() {
   const { theme } = useTheme();
@@ -43,7 +43,7 @@ function Briefings() {
                 <T>{t.defense}</T>
               </View>
               <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <Pressable accessibilityRole="link" hitSlop={8} onPress={() => WebBrowser.openBrowserAsync(t.reference.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openExternal(t.reference.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <ExternalLink size={14} color={theme.textMuted} />
                   <T v="caption" muted>
                     {t.reference.publisher}

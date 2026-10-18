@@ -11,7 +11,6 @@ import {
 } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import * as WebBrowser from 'expo-web-browser';
 import {
   CircleCheck,
   ExternalLink,
@@ -41,6 +40,7 @@ import { useStudySession } from '@/state/tracker';
 import { useHaptics, useTheme } from '@/theme/ThemeProvider';
 import { radius, space } from '@/theme/tokens';
 import type { Theme } from '@/theme/tokens';
+import { openExternal } from '@/lib/links';
 
 type Step = 'brief' | 'baseline' | 'harden' | 'report';
 const STEPS: Step[] = ['brief', 'baseline', 'harden', 'report'];
@@ -454,7 +454,7 @@ export default function LabScreen() {
               <Pressable
                 key={r.url}
                 accessibilityRole="link"
-                onPress={() => WebBrowser.openBrowserAsync(r.url)}
+                onPress={() => openExternal(r.url)}
                 style={{ flexDirection: 'row', gap: space.md, alignItems: 'center', padding: space.md, borderRadius: radius.md, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                 <ExternalLink size={18} color={theme.accent} />
                 <View style={{ flex: 1 }}>
