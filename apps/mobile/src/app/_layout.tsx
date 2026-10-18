@@ -36,6 +36,8 @@ function AppStack() {
         <Stack.Screen name="quiz" options={{ animation: animate ? 'slide_from_bottom' : 'none' }} />
         <Stack.Screen name="review" options={{ animation: animate ? 'slide_from_bottom' : 'none' }} />
         <Stack.Screen name="game/[id]" options={{ animation: animate ? 'slide_from_bottom' : 'none' }} />
+        <Stack.Screen name="lab/[id]" options={{ animation: animate ? 'slide_from_bottom' : 'none' }} />
+        <Stack.Screen name="labs" />
         <Stack.Screen name="roadmap/[id]" />
         <Stack.Screen name="interview" />
         <Stack.Screen name="share" />

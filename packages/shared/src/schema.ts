@@ -161,13 +161,3 @@ export const SkillArea = z.object({
 });
 export type SkillArea = z.infer<typeof SkillArea>;
 
-export const ContentPack = z.object({
-  version: z.string(),
-  roadmaps: z.array(Roadmap),
-  lessons: z.array(Lesson),
-  threats: z.array(ThreatItem),
-  flashcards: z.array(Flashcard),
-  games: z.array(Game),
-  skills: z.array(SkillArea),
-});
-export type ContentPack = z.infer<typeof ContentPack>;

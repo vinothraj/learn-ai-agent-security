@@ -8,6 +8,8 @@ export interface BadgeInput {
   distinctGamesPlayed: number;
   totalGames: number;
   totalMinutes: number;
+  labsPassed: number;
+  totalLabs: number;
 }
 
 export interface Badge {
@@ -49,6 +51,8 @@ export function computeBadges(i: BadgeInput): Badge[] {
     def('cards-50', 'Memory Vault', 'Review 50 flashcards', i.cardsReviewed, 50),
     def('daily-5', 'Daily Defender', 'Finish 5 daily challenges', i.dailyChallenges, 5),
     def('all-games', 'Game Master', 'Play every mini-game', i.distinctGamesPlayed, i.totalGames),
+    def('first-lab', 'Lab Rat', 'Pass your first security lab', i.labsPassed, 1),
+    def('all-labs', 'Red Team Ready', 'Pass every security lab', i.labsPassed, i.totalLabs),
     def('hour', 'Dedicated', 'Spend 60 active minutes learning', i.totalMinutes, 60),
   ];
 }

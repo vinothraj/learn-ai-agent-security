@@ -1,4 +1,4 @@
-import { ContentPack } from '@laas/shared';
+import { ContentPack, labIssues } from '@laas/shared';
 import { describe, expect, it } from 'vitest';
 import { contentPack } from './index';
 
@@ -90,6 +90,17 @@ describe('content pack', () => {
       for (const r of fixed) counts.set(r.correctIndex, (counts.get(r.correctIndex) ?? 0) + 1);
       expect(Math.max(...counts.values()) / fixed.length, g.id).toBeLessThanOrEqual(0.67);
     }
+  });
+
+  it('ships 10 internally consistent labs covering the required categories', () => {
+    expect(contentPack.labs).toHaveLength(10);
+    expect(new Set(contentPack.labs.map((l) => l.category)).size).toBe(10);
+    for (const lab of contentPack.labs) {
+      expect(labIssues(lab), lab.id).toEqual([]);
+      if (lab.lessonId) expect(byLesson(lab.lessonId), lab.id).toBe(true);
+    }
+    const attackIds = contentPack.labs.flatMap((l) => l.attacks.map((a) => a.id));
+    expect(new Set(attackIds).size).toBe(attackIds.length);
   });
 
   it('keeps unreviewed content clearly flagged', () => {

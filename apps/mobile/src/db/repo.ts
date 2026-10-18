@@ -197,6 +197,15 @@ export async function loadDailyStats(db: SQLiteDatabase): Promise<Map<string, Da
   );
   for (const r of reviews) get(r.day).cardsReviewed = r.n;
 
+  const labs = await db.getAllAsync<{ day: string; runs: number; passed: number }>(
+    'SELECT day, SUM(runs) AS runs, SUM(passed) AS passed FROM lab_attempts GROUP BY day',
+  );
+  for (const r of labs) {
+    const d = get(r.day);
+    d.labRuns = r.runs;
+    d.labsPassed = r.passed;
+  }
+
   return map;
 }
 
@@ -310,7 +319,9 @@ export async function loadEvidence(db: SQLiteDatabase): Promise<Evidence[]> {
   const rows = await db.getAllAsync<{ lesson_id: string; correct: number; created_at: number }>(
     `SELECT lesson_id, correct, created_at FROM question_responses
      UNION ALL
-     SELECT lesson_id, correct, created_at FROM game_rounds WHERE lesson_id IS NOT NULL`,
+     SELECT lesson_id, correct, created_at FROM game_rounds WHERE lesson_id IS NOT NULL
+     UNION ALL
+     SELECT lesson_id, passed AS correct, completed_at AS created_at FROM lab_attempts WHERE lesson_id IS NOT NULL`,
   );
   return rows.map((r) => ({ lessonId: r.lesson_id, correct: r.correct === 1, at: r.created_at }));
 }
@@ -327,6 +338,7 @@ export async function loadCounters(db: SQLiteDatabase) {
     perfectLessons: await one('SELECT COUNT(*) AS n FROM lesson_progress WHERE best_score = 100'),
     distinctGamesPlayed: await one('SELECT COUNT(DISTINCT game_id) AS n FROM game_rounds'),
     dailyChallenges: await one('SELECT COUNT(*) AS n FROM daily_challenges'),
+    labsPassed: await one('SELECT COUNT(DISTINCT lab_id) AS n FROM lab_attempts WHERE passed = 1'),
   };
 }
 
@@ -340,5 +352,53 @@ export async function resetAllProgress(db: SQLiteDatabase) {
     DELETE FROM card_reviews;
     DELETE FROM game_rounds;
     DELETE FROM daily_challenges;
+    DELETE FROM lab_attempts;
   `);
+}
+
+// ---- Security labs ----
+
+export interface LabAttemptInput {
+  id: string;
+  labId: string;
+  lessonId: string | null;
+  day: string;
+  startedAt: number;
+  passed: boolean;
+  stars: number;
+  runs: number;
+  controls: string[];
+}
+
+export async function saveLabAttempt(db: SQLiteDatabase, a: LabAttemptInput) {
+  await db.runAsync(
+    `INSERT OR REPLACE INTO lab_attempts (id, lab_id, lesson_id, day, started_at, completed_at, passed, stars, runs, controls)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    a.id,
+    a.labId,
+    a.lessonId,
+    a.day,
+    a.startedAt,
+    Date.now(),
+    a.passed ? 1 : 0,
+    a.stars,
+    a.runs,
+    JSON.stringify(a.controls),
+  );
+}
+
+export interface LabBest {
+  labId: string;
+  stars: number;
+  passed: boolean;
+  attempts: number;
+}
+
+/** Best result per lab (for list badges and recommendations). */
+export async function loadLabBests(db: SQLiteDatabase): Promise<Map<string, LabBest>> {
+  const rows = await db.getAllAsync<{ lab_id: string; stars: number; passed: number; attempts: number }>(
+    `SELECT lab_id, MAX(stars) AS stars, MAX(passed) AS passed, COUNT(*) AS attempts
+     FROM lab_attempts GROUP BY lab_id`,
+  );
+  return new Map(rows.map((r) => [r.lab_id, { labId: r.lab_id, stars: r.stars, passed: r.passed === 1, attempts: r.attempts }]));
 }

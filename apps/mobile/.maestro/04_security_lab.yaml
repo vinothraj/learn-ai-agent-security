@@ -1,0 +1,28 @@
+# Runs the PayBot lab end to end: brief -> attack -> defend -> 3-star report.
+appId: com.vinoth.aiagentsecurity
+---
+- launchApp
+- tapOn: "Practice"
+- scrollUntilVisible:
+    element: "Security labs"
+- tapOn: "Security labs"
+- scrollUntilVisible:
+    element: "Rubber-stamp payments"
+- tapOn: "Rubber-stamp payments"
+- tapOn: "Start testing"
+- repeat:
+    while:
+      visible: "Run test"
+    commands:
+      - tapOn: "Run test"
+- tapOn: "Harden the system"
+- tapOn: "Render approvals from structured data"
+- tapOn: "Highlight changed details"
+- tapOn: "Risk-based approval only"
+- tapOn: "Second approver above EUR 10,000"
+- tapOn: "Re-run all tests"
+- assertVisible: "4/4 tests blocked"
+- tapOn: "Finish & view report"
+- assertVisible: "Lab passed"
+- assertVisible: "Export PDF report"
+- tapOn: "Done"

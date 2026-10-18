@@ -45,7 +45,8 @@ function Item({
 
 export default function Practice() {
   const { theme } = useTheme();
-  const { today, dailyToday, dueCards, cards } = useProgress();
+  const { today, dailyToday, dueCards, cards, labBests } = useProgress();
+  const labsPassed = [...labBests.values()].filter((b) => b.passed).length;
   const game = dailyGame(today);
   let i = 0;
 
@@ -103,7 +104,7 @@ export default function Practice() {
       ))}
 
       <Appear index={i++}>
-        <SectionTitle>Interviews & labs</SectionTitle>
+        <SectionTitle>Labs & interviews</SectionTitle>
       </Appear>
       <Appear index={i++}>
         <Item
@@ -119,9 +120,8 @@ export default function Practice() {
           icon={FlaskConical}
           color={theme.success}
           title="Security labs"
-          detail="Simulated prompt injection, RAG and agent-permission labs with reports"
-          badge="Soon"
-          soon
+          detail={`${labsPassed}/${contentPack.labs.length} passed · attack, harden and report on fictional systems`}
+          onPress={() => router.push('/labs')}
         />
       </Appear>
     </Screen>

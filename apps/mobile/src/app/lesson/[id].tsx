@@ -1,4 +1,4 @@
-import { flashcardsByLesson, lessonById } from '@laas/content';
+import { contentPack, flashcardsByLesson, lessonById } from '@laas/content';
 import { dayKey, quizXp, scoreQuiz, XP_RULES, type EvidenceLevel } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -255,6 +255,19 @@ export default function LessonPlayer() {
                 </T>
               </Card>
             ) : null}
+            {contentPack.labs
+              .filter((l) => l.lessonId === lesson.id)
+              .map((l) => (
+                <Card key={l.id} onPress={() => router.replace(`/lab/${l.id}`)} accessibilityLabel={`Practice in lab ${l.title}`}>
+                  <T v="caption" color={theme.success}>
+                    PRACTICE IT IN A LAB · {l.minutes} MIN
+                  </T>
+                  <T v="heading">{l.title}</T>
+                  <T v="caption" muted>
+                    {l.summary}
+                  </T>
+                </Card>
+              ))}
             <T v="label" muted>
               REFERENCES & FURTHER READING
             </T>

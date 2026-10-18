@@ -183,6 +183,8 @@ describe('badges and shuffles', () => {
       distinctGamesPlayed: 3,
       totalGames: 7,
       totalMinutes: 30,
+      labsPassed: 0,
+      totalLabs: 10,
     });
     const byId = new Map(b.map((x) => [x.id, x]));
     expect(byId.get('first-lesson')!.earned).toBe(true);

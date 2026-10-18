@@ -10,3 +10,6 @@ export * from './fsrs';
 export * from './mastery';
 export * from './timeofday';
 export * from './badges';
+export * from './labs';
+export * from './pack';
+export * from './labReport';

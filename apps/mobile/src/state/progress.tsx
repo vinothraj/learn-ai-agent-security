@@ -31,8 +31,10 @@ import {
   loadCounters,
   loadDailyStats,
   loadEvidence,
+  loadLabBests,
   loadSessions,
   type DailyChallengeResult,
+  type LabBest,
   type LessonStatus,
   type StoredCard,
 } from '@/db/repo';
@@ -47,7 +49,8 @@ interface Raw {
   evidence: Evidence[];
   sessions: { startedAt: number; seconds: number }[];
   dailyToday: DailyChallengeResult | null;
-  counters: { perfectLessons: number; distinctGamesPlayed: number; dailyChallenges: number };
+  counters: { perfectLessons: number; distinctGamesPlayed: number; dailyChallenges: number; labsPassed: number };
+  labBests: Map<string, LabBest>;
 }
 
 interface ProgressCtx {
@@ -70,6 +73,7 @@ interface ProgressCtx {
   sessions: { startedAt: number; seconds: number }[];
   dailyToday: DailyChallengeResult | null;
   badges: Badge[];
+  labBests: Map<string, LabBest>;
   refresh: () => Promise<void>;
 }
 
@@ -87,15 +91,16 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     // Completed lessons always have their flashcards in the deck (also back-fills Phase 1 progress).
     const completedIds = statuses.filter((s) => s.status === 'completed').map((s) => s.lessonId);
     await ensureCards(db, completedIds.flatMap((id) => flashcardsByLesson.get(id) ?? []));
-    const [stats, cards, evidence, sessions, dailyToday, counters] = await Promise.all([
+    const [stats, cards, evidence, sessions, dailyToday, counters, labBests] = await Promise.all([
       loadDailyStats(db),
       getCards(db),
       loadEvidence(db),
       loadSessions(db),
       getDailyChallenge(db, today),
       loadCounters(db),
+      loadLabBests(db),
     ]);
-    return { today, now: now.getTime(), stats, statuses, cards, evidence, sessions, dailyToday, counters };
+    return { today, now: now.getTime(), stats, statuses, cards, evidence, sessions, dailyToday, counters, labBests };
   }, [db]);
 
   const refresh = useCallback(async () => setRaw(await load()), [load]);
@@ -170,7 +175,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         distinctGamesPlayed: raw.counters.distinctGamesPlayed,
         totalGames: contentPack.games.length,
         totalMinutes: Math.floor(totalSeconds / 60),
+        labsPassed: raw.counters.labsPassed,
+        totalLabs: contentPack.labs.length,
       }),
+      labBests: raw.labBests,
       refresh,
     };
   }, [raw, refresh, settings.focusRoadmapId]);

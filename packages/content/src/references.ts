@@ -77,4 +77,24 @@ export const REF = {
     publisher: 'NIST',
     url: 'https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf',
   },
+  owaspSsrf: {
+    title: 'Server-Side Request Forgery Prevention Cheat Sheet',
+    publisher: 'OWASP Cheat Sheet Series',
+    url: 'https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html',
+  },
+  owaspSqli: {
+    title: 'SQL Injection Prevention Cheat Sheet',
+    publisher: 'OWASP Cheat Sheet Series',
+    url: 'https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html',
+  },
+  owaspLogging: {
+    title: 'Logging Cheat Sheet',
+    publisher: 'OWASP Cheat Sheet Series',
+    url: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html',
+  },
+  owaspCsp: {
+    title: 'Content Security Policy Cheat Sheet',
+    publisher: 'OWASP Cheat Sheet Series',
+    url: 'https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html',
+  },
 } satisfies Record<string, Reference>;

@@ -391,6 +391,9 @@ Minimum for launch: **30 lessons** (A: 5, B: 8, C: 8, D: 5, F: 4), **150 quiz qu
 | **10. Optional AI** | Provider adapter, budgets, AI summaries/quiz-gen (review queue), tutor chat, fallback tests | App fully functional with `AI_PROVIDER=none` |
 | **11. Hardening** | Security review, accessibility audit, performance profiling, widget + app shortcuts, test coverage | Checklist complete; no high/critical audit findings |
 | **12. Play Store release** | Signing (Play App Signing), AAB via EAS, store listing, screenshots, feature graphic, privacy policy, Data safety form, content rating, closed testing track | Build accepted on the closed testing track |
+| **13. Pro access + community** | Pro entitlement (Google Play Billing subscription, verified server-side), community Q&A/discussion where only Pro members post and reply and everyone else reads, moderation tools, reporting, rate limits (see §25) | Non-Pro users cannot post or reply (enforced by API tests); moderation queue works end to end |
+
+**Enterprise-grade bar (applies to every phase from 5 onward):** SSO-ready auth (OIDC/SAML for organisations), tenant-aware data model, RBAC with audit logs on every admin and moderation action, OWASP ASVS L2 controls on the API, encrypted backups with tested restore, observability (structured logs, metrics, error tracking, uptime alerts), SLOs, data export and deletion (GDPR/DPDP), dependency and secret scanning in CI, staged environments (dev / staging / prod) and documented incident response.
 
 ---
 
@@ -409,6 +412,15 @@ Minimum for launch: **30 lessons** (A: 5, B: 8, C: 8, D: 5, F: 4), **150 quiz qu
 - Policy framing: educational, defensive, simulated labs only. No real attack tooling (avoids Play's malicious-behaviour policy flags).
 
 ---
+
+## 25. Pro access and community (Phase 13, built last)
+
+- **Who can do what:** everyone, including free and guest users, can **read** discussions. Only **Pro** members can **post questions, answer, reply and react**. Moderators and Admins can hide, lock, pin and ban. All of this is enforced in the API, never only in the UI.
+- **Scope:** topics are limited to AI, GenAI and agent security. Threads link to lessons, labs or news items. There is no direct messaging in the first version, which keeps the moderation burden small.
+- **Safety:** content is sanitised Markdown only, with no raw HTML or images until moderation exists. Pro posting has rate limits, there is a report button, an automated spam and toxicity pre-filter (optional AI with a deterministic keyword fallback), and a moderator queue. A rule bans real-target exploit instructions and sharing credentials. Every moderation action is audit-logged.
+- **Pro entitlement:** Google Play Billing subscription, with purchase tokens verified on the server (Google Play Developer API) and entitlement stored server-side. Optional RevenueCat (free tier) simplifies this. Enterprise customers get Pro through organisation licences.
+- **Costs to flag:** Google takes a 15% service fee on subscriptions (first US$1M a year), and the backend needs to be always-on. Free-tier hosting that sleeps is not acceptable for a community.
+- **Play policy:** user-generated content requires in-app reporting, blocking, published content rules and active moderation (Google Play UGC policy).
 
 ## 24. Future roadmap (design for it now, don't build it yet)
 

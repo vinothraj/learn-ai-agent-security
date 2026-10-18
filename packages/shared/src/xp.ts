@@ -7,6 +7,8 @@ export const XP_RULES = {
 
 export const GAME_XP = { perCorrect: 5, perfectBonus: 10, dailyBonus: 20 } as const;
 export const REVIEW_XP = 2;
+/** First pass of a lab, plus a one-time bonus for a 3-star (defense-in-depth, no decoys) solution. */
+export const LAB_XP = { pass: 60, threeStars: 20 } as const;
 
 export const LEVELS = [
   { title: 'Recruit', xp: 0 },

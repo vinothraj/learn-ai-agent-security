@@ -100,6 +100,23 @@ const MIGRATIONS: string[] = [
     completed_at INTEGER NOT NULL
   );
   `,
+  // v3 (Phase 3): simulated security labs
+  `
+  CREATE TABLE IF NOT EXISTS lab_attempts (
+    id TEXT PRIMARY KEY NOT NULL,
+    lab_id TEXT NOT NULL,
+    lesson_id TEXT,
+    day TEXT NOT NULL,
+    started_at INTEGER NOT NULL,
+    completed_at INTEGER NOT NULL,
+    passed INTEGER NOT NULL CHECK (passed IN (0, 1)),
+    stars INTEGER NOT NULL CHECK (stars BETWEEN 0 AND 3),
+    runs INTEGER NOT NULL DEFAULT 0,
+    controls TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_lab_attempts_lab ON lab_attempts(lab_id);
+  CREATE INDEX IF NOT EXISTS idx_lab_attempts_day ON lab_attempts(day);
+  `,
 ];
 
 export async function migrate(db: SQLiteDatabase) {

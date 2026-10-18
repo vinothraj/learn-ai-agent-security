@@ -13,7 +13,11 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   weak topics with "Fix in 5 min", 7 mini-games (choice/spot/match engines), deterministic daily
   challenge, streak freezes, badges, Revise ring, 26-week heatmap, skill radar, mastery trend,
   time-of-day analysis with reminder suggestion, shareable weekly report image, Maestro flows.
-- **Next: Phase 3.** Simulated security labs engine (10 labs) with interactive diagrams and PDF reports.
+- **Phase 3 (security labs): done.** Data-driven simulation engine (`packages/shared/src/labs.ts`),
+  10 labs (one per required category), interactive architecture diagrams, attack → defend → report
+  flow with decoy controls and 0–3 stars, OWASP-style severity, PDF report export (expo-print).
+- **Next: Phase 4.** Interview prep: role-based question banks, mock interviews, deterministic scoring.
+- **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
 
@@ -56,6 +60,10 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
 - Badges, mastery, streak freezes and insights are derived from recorded data, never stored.
 - Daily challenge = `pickDaily` + `seededShuffle` on the date: identical for every learner that day;
   first completion counts (`daily_challenges` PK on day).
+- Labs: outcomes are pure functions of enabled controls (`blockedBy` = OR of AND-groups). Every lab must
+  pass `labIssues()` (decoy present, recommended set blocks all, nothing blocked with no controls or with
+  decoys only). Labs simulate FICTIONAL systems only; never add real-target execution here.
+- Report HTML (`buildLabReportHtml`) lives in shared and escapes every string; it is unit-tested for escaping.
 - E2E: Maestro flows in `apps/mobile/.maestro/` target an installed preview/dev build
   (`maestro test .maestro/`); they can't run in Expo Go.
 - Time tracking: credited only while foregrounded on a learning screen and within 60 s of the last

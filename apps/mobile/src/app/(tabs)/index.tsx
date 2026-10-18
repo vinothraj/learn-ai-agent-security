@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   ChevronRight,
   Clock,
+  FlaskConical,
   GraduationCap,
   MessageSquareText,
   Play,
@@ -34,7 +35,9 @@ function greeting(name: string) {
 export default function Home() {
   const { theme } = useTheme();
   const { settings } = useSettings();
-  const { next, inProgress, today, stats, level, dueCards, dailyToday, weak, completed } = useProgress();
+  const { next, inProgress, today, stats, level, dueCards, dailyToday, weak, completed, labBests } = useProgress();
+  // First unpassed lab whose lesson the learner has finished: theory first, then practice.
+  const recommendedLab = contentPack.labs.find((l) => l.lessonId && completed.has(l.lessonId) && !labBests.get(l.id)?.passed);
 
   const threat = pickDaily(contentPack.threats, today, 'threat');
   const interviewLesson = pickDaily(contentPack.lessons, today, 'interview');
@@ -154,6 +157,26 @@ export default function Home() {
                 </T>
               </Pressable>
             ) : null}
+          </Card>
+        </Appear>
+      ) : null}
+
+      {recommendedLab ? (
+        <Appear index={i++}>
+          <Card onPress={() => router.push(`/lab/${recommendedLab.id}`)} accessibilityLabel={`Recommended lab: ${recommendedLab.title}`}>
+            <Row>
+              <IconBadge icon={FlaskConical} color={theme.success} />
+              <View style={{ flex: 1 }}>
+                <T v="caption" color={theme.success}>
+                  RECOMMENDED LAB · {recommendedLab.minutes} MIN
+                </T>
+                <T v="heading">{recommendedLab.title}</T>
+                <T v="caption" muted>
+                  Put “{lessonById.get(recommendedLab.lessonId!)?.title}” into practice
+                </T>
+              </View>
+              <ChevronRight size={20} color={theme.textMuted} />
+            </Row>
           </Card>
         </Appear>
       ) : null}

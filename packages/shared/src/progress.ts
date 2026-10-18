@@ -1,4 +1,5 @@
-import type { ContentPack, Lesson, QuizQuestion, Roadmap } from './schema';
+import type { ContentPack } from './pack';
+import type { Lesson, QuizQuestion, Roadmap } from './schema';
 
 export function isLessonUnlocked(lesson: Lesson, completed: ReadonlySet<string>): boolean {
   return lesson.prerequisites.every((p) => completed.has(p));
