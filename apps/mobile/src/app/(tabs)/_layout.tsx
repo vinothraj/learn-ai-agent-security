@@ -31,7 +31,7 @@ export default function TabsLayout() {
         name="practice"
         options={{ title: 'Practice', tabBarIcon: ({ color }) => <Dumbbell size={22} color={color} /> }}
       />
-      <Tabs.Screen name="news" options={{ title: 'Threats', tabBarIcon: ({ color }) => <Newspaper size={22} color={color} /> }} />
+      <Tabs.Screen name="news" options={{ title: 'News', tabBarIcon: ({ color }) => <Newspaper size={22} color={color} /> }} />
       <Tabs.Screen name="me" options={{ title: 'Me', tabBarIcon: ({ color }) => <UserRound size={22} color={color} /> }} />
     </Tabs>
   );

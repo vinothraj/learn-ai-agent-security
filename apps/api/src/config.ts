@@ -25,6 +25,8 @@ const EnvSchema = z.object({
   /** Emails promoted to super_admin on first sign-in (bootstrap). */
   SUPER_ADMIN_EMAILS: list,
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).default(300),
+  /** Background feed ingestion. Off in tests; can be turned off per instance. */
+  NEWS_INGESTION: z.enum(['on', 'off']).default('on'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

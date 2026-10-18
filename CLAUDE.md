@@ -22,7 +22,11 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
 - **Phase 5 (backend, auth, sync): done.** `apps/api` (Fastify 5 + Postgres/PGlite), Supabase JWT
   verification (JWKS), server-side RBAC, append-only audit log, `/v1/sync` with shared merge rules,
   data export and account deletion; app outbox triggers, sync engine, Account screen. See docs/backend.md.
-- **Next: Phase 6.** Security news ingestion (RSS/advisories, dedupe, classification, review queue).
+- **Phase 6 (news ingestion): done.** 7 verified feeds (OWASP GenAI, CISA, NIST, NCSC, Google, GitHub, arXiv),
+  HTTPS-only bounded fetches, XXE-safe parsing, domain allow-lists, whole-word AI relevance filter,
+  canonical-URL + SimHash dedupe, rule-based classification, auto-publish only for official non-high-impact
+  items, admin review queue (audited), public `/v1/news`, News tab with offline cache.
+- **Next: Phase 7.** Admin web panel (apps/admin).
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
@@ -75,6 +79,10 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
   4+ char keyword stems match as prefixes. Content tests require every model answer to score ≥80% on its
   own rubric and a vague answer ≤40%, so add rubric keywords that the model answer actually uses.
   Always present the score as a coverage signal, never a hiring verdict.
+- News: feed text is untrusted and stored as plain text only; the app never renders feed HTML. Source
+  excerpts and our interpretation are separate fields and are labelled separately in the UI. Thresholds
+  (NEAR_DUPLICATE_BITS=12) were measured on real headline pairs; keep the CVE-id equality rule.
+  Behind a corporate proxy set HTTPS_PROXY for the API (undici EnvHttpProxyAgent).
 - E2E: Maestro flows in `apps/mobile/.maestro/` target an installed preview/dev build
   (`maestro test .maestro/`); they can't run in Expo Go.
 - Time tracking: credited only while foregrounded on a learning screen and within 60 s of the last

@@ -70,6 +70,89 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
         ('community', false, 'Pro community (Phase 13)');
     `,
   },
+  {
+    id: '002_news',
+    sql: `
+      CREATE TABLE news_sources (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        feed_url text NOT NULL UNIQUE CHECK (feed_url LIKE 'https://%'),
+        publisher text NOT NULL,
+        allowed_domains text[] NOT NULL CHECK (cardinality(allowed_domains) > 0),
+        trust text NOT NULL CHECK (trust IN ('official', 'community', 'research')),
+        -- Broad feeds (e.g. government advisories) only keep AI-related items.
+        require_ai_relevance boolean NOT NULL DEFAULT true,
+        enabled boolean NOT NULL DEFAULT true,
+        fetch_interval_minutes integer NOT NULL DEFAULT 360 CHECK (fetch_interval_minutes BETWEEN 30 AND 10080),
+        max_items_per_run integer NOT NULL DEFAULT 30 CHECK (max_items_per_run BETWEEN 1 AND 200),
+        last_fetched_at timestamptz,
+        last_status text,
+        last_error text,
+        etag text,
+        last_modified text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE news_articles (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        source_id uuid NOT NULL REFERENCES news_sources(id) ON DELETE CASCADE,
+        title text NOT NULL,
+        url text NOT NULL,
+        canonical_url text NOT NULL UNIQUE,
+        publisher text NOT NULL,
+        published_at timestamptz,
+        retrieved_at timestamptz NOT NULL DEFAULT now(),
+        last_checked_at timestamptz NOT NULL DEFAULT now(),
+        category text NOT NULL,
+        tags text[] NOT NULL DEFAULT '{}',
+        excerpt text NOT NULL DEFAULT '',
+        summary text NOT NULL,
+        summary_origin text NOT NULL DEFAULT 'template' CHECK (summary_origin IN ('template', 'ai', 'editor')),
+        defense text NOT NULL,
+        vuln_ids text[] NOT NULL DEFAULT '{}',
+        verification text NOT NULL CHECK (verification IN ('source_verified', 'unverified')),
+        high_impact boolean NOT NULL DEFAULT false,
+        review_status text NOT NULL CHECK (review_status IN ('pending', 'published', 'rejected')),
+        review_reason text,
+        lesson_id text,
+        lab_id text,
+        interview_id text,
+        fingerprint text NOT NULL,
+        reviewed_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        reviewed_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX idx_news_published ON news_articles(review_status, published_at DESC);
+      CREATE INDEX idx_news_created ON news_articles(created_at DESC);
+
+      CREATE TABLE ingestion_runs (
+        id bigserial PRIMARY KEY,
+        source_id uuid REFERENCES news_sources(id) ON DELETE CASCADE,
+        started_at timestamptz NOT NULL DEFAULT now(),
+        finished_at timestamptz,
+        status text NOT NULL CHECK (status IN ('running', 'ok', 'not_modified', 'error')),
+        fetched integer NOT NULL DEFAULT 0,
+        inserted integer NOT NULL DEFAULT 0,
+        duplicates integer NOT NULL DEFAULT 0,
+        rejected integer NOT NULL DEFAULT 0,
+        error text
+      );
+      CREATE INDEX idx_runs_started ON ingestion_runs(started_at DESC);
+
+      INSERT INTO news_sources (name, feed_url, publisher, allowed_domains, trust, require_ai_relevance, fetch_interval_minutes) VALUES
+        ('OWASP GenAI Security Project', 'https://genai.owasp.org/feed/', 'OWASP', '{genai.owasp.org}', 'official', false, 720),
+        ('CISA advisories', 'https://www.cisa.gov/cybersecurity-advisories/all.xml', 'CISA', '{cisa.gov}', 'official', true, 360),
+        ('NIST news', 'https://www.nist.gov/news-events/news/rss.xml', 'NIST', '{nist.gov}', 'official', true, 720),
+        ('UK NCSC', 'https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml', 'UK NCSC', '{ncsc.gov.uk}', 'official', true, 720),
+        ('Google Security Blog', 'https://feeds.feedburner.com/GoogleOnlineSecurityBlog', 'Google', '{security.googleblog.com,googleblog.com}', 'official', true, 720),
+        ('GitHub Security Blog', 'https://github.blog/security/feed/', 'GitHub', '{github.blog}', 'official', true, 720),
+        ('arXiv cs.CR (metadata)', 'https://rss.arxiv.org/rss/cs.CR', 'arXiv', '{arxiv.org}', 'research', true, 1440);
+
+      INSERT INTO feature_flags (key, enabled, description) VALUES ('news_ingestion', true, 'Background feed ingestion')
+        ON CONFLICT (key) DO NOTHING;
+      UPDATE feature_flags SET enabled = true WHERE key = 'news';
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

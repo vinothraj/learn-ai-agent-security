@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { migrate } from '@/db/migrations';
 import { ProgressProvider } from '@/state/progress';
 import { SettingsProvider } from '@/state/settings';
+import { NewsProvider } from '@/state/news';
 import { SyncProvider } from '@/state/sync';
 import { TrackerProvider } from '@/state/tracker';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -60,9 +61,11 @@ export default function RootLayout() {
             <ThemeProvider>
               <ProgressProvider>
                 <SyncProvider>
-                  <TrackerProvider>
-                    <AppStack />
-                  </TrackerProvider>
+                  <NewsProvider>
+                    <TrackerProvider>
+                      <AppStack />
+                    </TrackerProvider>
+                  </NewsProvider>
                 </SyncProvider>
               </ProgressProvider>
             </ThemeProvider>

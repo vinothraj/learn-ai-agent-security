@@ -51,6 +51,15 @@ export const openApiSpec = {
         responses: ok('Role changed'),
       },
     },
+    '/v1/news': { get: { summary: 'Published security news (public; source excerpt and interpretation are separate fields)', responses: ok('Articles') } },
+    '/v1/admin/news': { get: { summary: 'Review queue by status (admin)', security: bearer, responses: ok('Articles') } },
+    '/v1/admin/news/{id}': { patch: { summary: 'Publish or reject an article (admin, audit-logged)', security: bearer, responses: ok('Reviewed') } },
+    '/v1/admin/news-sources': {
+      get: { summary: 'List feed sources (admin)', security: bearer, responses: ok('Sources') },
+      post: { summary: 'Add an https feed source with a domain allow-list (admin)', security: bearer, responses: { 201: { description: 'Created' } } },
+    },
+    '/v1/admin/news-sources/{id}/run': { post: { summary: 'Ingest a source now (admin)', security: bearer, responses: ok('Run summary') } },
+    '/v1/admin/ingestion-runs': { get: { summary: 'Recent ingestion runs and failures (admin)', security: bearer, responses: ok('Runs') } },
     '/v1/admin/audit': { get: { summary: 'Audit log (super-admin)', security: bearer, responses: ok('Entries') } },
   },
 };

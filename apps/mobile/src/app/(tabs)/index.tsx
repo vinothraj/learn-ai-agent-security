@@ -22,6 +22,8 @@ import { TodayCard } from '@/components/TodayCard';
 import { Appear, Card, IconBadge, ProgressBar, Row, Screen, SectionTitle, T, Tag } from '@/components/ui';
 import { dailyGame, reviewMinutes } from '@/lib/daily';
 import { lessonStepCount } from '@/lib/lesson';
+import { NewsCard } from '@/components/NewsCard';
+import { useNews } from '@/state/news';
 import { useProgress } from '@/state/progress';
 import { useSettings } from '@/state/settings';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -49,6 +51,8 @@ export default function Home() {
   const weakest = weak[0];
   const weakLesson = weakest ? lessonById.get(weakest.lessonId) : undefined;
   const support = weakLesson ? supportFor(weakLesson, completed).map((id) => lessonById.get(id)).filter((l) => l !== undefined) : [];
+  const news = useNews();
+  const latest = news.articles.slice(0, 2);
   let i = 0;
 
   return (
@@ -216,6 +220,26 @@ export default function Home() {
               </View>
             </Row>
           </Card>
+        </Appear>
+      ) : null}
+
+      {latest.length > 0 ? (
+        <Appear index={i++}>
+          <SectionTitle
+            action={
+              <Pressable accessibilityRole="link" onPress={() => router.push('/news')} hitSlop={8}>
+                <T v="label" color={theme.accent}>
+                  All news →
+                </T>
+              </Pressable>
+            }>
+            Latest verified news
+          </SectionTitle>
+          {latest.map((a) => (
+            <View key={a.id} style={{ marginBottom: 12 }}>
+              <NewsCard a={a} compact />
+            </View>
+          ))}
         </Appear>
       ) : null}
 

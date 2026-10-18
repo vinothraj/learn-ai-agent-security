@@ -11,11 +11,12 @@ import { HttpError } from './http';
 import { openApiSpec } from './openapi';
 import { accountRoutes } from './routes/account';
 import { adminRoutes } from './routes/admin';
+import { newsRoutes } from './routes/news';
 import { syncRoutes } from './routes/sync';
 import { systemRoutes } from './routes/system';
 import { upsertUser } from './services';
 
-const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/dev/token']);
+const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/v1/news', '/dev/token']);
 
 export async function buildApp({ config, db, verifier }: { config: Config; db: Db; verifier?: Verifier }): Promise<FastifyInstance> {
   const verify = verifier ?? createVerifier(config);
@@ -83,5 +84,6 @@ export async function buildApp({ config, db, verifier }: { config: Config; db: D
   await app.register(accountRoutes, { db, config });
   await app.register(syncRoutes, { db });
   await app.register(adminRoutes, { db });
+  await app.register(newsRoutes, { db });
   return app;
 }

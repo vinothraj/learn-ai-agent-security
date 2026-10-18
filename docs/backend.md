@@ -107,3 +107,9 @@ Supabase takes daily backups on paid plans; on the free tier, schedule `pg_dump`
 pg_dump "$DATABASE_URL" --format=custom --file=laas-$(date +%F).dump
 pg_restore --clean --dbname "$RESTORE_URL" laas-YYYY-MM-DD.dump   # test restores regularly
 ```
+
+## Corporate networks
+
+If outbound internet access goes through a proxy, set `HTTPS_PROXY` (and optionally `NO_PROXY`)
+for the API process. All server-side requests (news feeds, Supabase admin API) then use it.
+Without the variable, the API connects directly.
