@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { migrate } from '@/db/migrations';
 import { ProgressProvider } from '@/state/progress';
 import { SettingsProvider } from '@/state/settings';
+import { SyncProvider } from '@/state/sync';
 import { TrackerProvider } from '@/state/tracker';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
@@ -44,6 +45,7 @@ function AppStack() {
         <Stack.Screen name="interview/mock" options={{ animation: animate ? 'slide_from_bottom' : 'none', gestureEnabled: false }} />
         <Stack.Screen name="share" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="account" />
       </Stack>
     </>
   );
@@ -57,9 +59,11 @@ export default function RootLayout() {
           <SettingsProvider>
             <ThemeProvider>
               <ProgressProvider>
-                <TrackerProvider>
-                  <AppStack />
-                </TrackerProvider>
+                <SyncProvider>
+                  <TrackerProvider>
+                    <AppStack />
+                  </TrackerProvider>
+                </SyncProvider>
               </ProgressProvider>
             </ThemeProvider>
           </SettingsProvider>

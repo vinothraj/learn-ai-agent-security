@@ -45,7 +45,8 @@
           "color": "#2DD4BF"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-secure-store"
     ],
     "experiments": {
       "reactCompiler": true

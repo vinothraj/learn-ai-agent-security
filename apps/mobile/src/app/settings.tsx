@@ -8,6 +8,7 @@ import { Button, Card, Chip, Row, Screen, SectionTitle, T } from '@/components/u
 import { resetAllProgress } from '@/db/repo';
 import { cancelReminders, formatTime, scheduleDailyReminder } from '@/lib/reminders';
 import { useProgress } from '@/state/progress';
+import { useSync } from '@/state/sync';
 import { useSettings, type Settings } from '@/state/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ACCENTS, type AccentKey, type ThemeMode } from '@/theme/tokens';
@@ -55,6 +56,7 @@ export default function SettingsScreen() {
   const { theme } = useTheme();
   const { settings, update } = useSettings();
   const { refresh } = useProgress();
+  const sync = useSync();
   const set = (patch: Partial<Settings>) => update(patch);
 
   const setReminder = async (enabled: boolean, hour = settings.reminderHour, minute = settings.reminderMinute) => {
@@ -68,6 +70,9 @@ export default function SettingsScreen() {
   };
 
   const confirmReset = () =>
+    sync.session
+      ? Alert.alert('Signed in', 'Your progress is backed up to your account, so a local reset would sync back. To start over, delete your account from Account settings.')
+      :
     Alert.alert('Reset all progress?', 'This deletes lessons, quiz history, study time and XP stored on this device. It cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -183,11 +188,17 @@ export default function SettingsScreen() {
         ) : null}
       </Card>
 
-      <SectionTitle>Privacy & data</SectionTitle>
+      <SectionTitle>Account & privacy</SectionTitle>
+      <Card onPress={() => router.push('/account')} accessibilityLabel="Account and cloud sync">
+        <T v="heading">{sync.session ? sync.session.email : 'Account & cloud sync'}</T>
+        <T v="caption" muted>
+          {sync.session ? 'Backed up and synced across your devices' : sync.configured ? 'Optional: sign in to back up your progress' : 'Offline mode'}
+        </T>
+      </Card>
       <Card>
         <T>
-          All progress is stored only on this device. There is no account, no analytics and no ads in this version. Lesson
-          content is AI-assisted draft material pending expert review.
+          Progress is stored on this device{sync.session ? ' and synced to your account' : ''}. No ads and no third-party analytics.
+          Lesson content is AI-assisted draft material pending expert review.
         </T>
         <Button kind="danger" label="Reset all progress" onPress={confirmReset} />
       </Card>

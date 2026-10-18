@@ -1,5 +1,60 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+const NOT_APPLYING = 'NOT EXISTS (SELECT 1 FROM sync_applying)';
+const NOW_MS = "CAST(strftime('%s','now') AS INTEGER) * 1000";
+const DEVICE = "(SELECT value FROM kv WHERE key = 'device_id')";
+
+/** One outbox trigger per table and operation; `keyExpr` must match the serializer's key. */
+function outboxTrigger(name: string, table: string, op: 'INSERT' | 'UPDATE' | 'DELETE', collection: string, keyExpr: string, when = '') {
+  return `
+  CREATE TRIGGER IF NOT EXISTS trg_${name}_${op.toLowerCase()} AFTER ${op} ON ${table}
+  WHEN ${NOT_APPLYING}${when ? ` AND ${when}` : ''}
+  BEGIN
+    INSERT INTO outbox (collection, key, changed_at) VALUES ('${collection}', ${keyExpr}, ${NOW_MS})
+    ON CONFLICT(collection, key) DO UPDATE SET changed_at = excluded.changed_at;
+  END;`;
+}
+
+/** Locally created log rows get a globally unique id: <device>:<kind>:<rowid>. */
+function syncIdTrigger(table: string, kind: string) {
+  return `
+  CREATE TRIGGER IF NOT EXISTS trg_${kind}_sync_id AFTER INSERT ON ${table}
+  WHEN NEW.sync_id IS NULL
+  BEGIN
+    UPDATE ${table} SET sync_id = ${DEVICE} || ':${kind}:' || NEW.id WHERE id = NEW.id;
+  END;`;
+}
+
+const deviceKey = (kind: string) => `${DEVICE} || ':${kind}:' || NEW.id`;
+const oldOr = (expr: string) => expr.replace(/NEW\./g, 'OLD.');
+
+export const SYNC_TRIGGERS = [
+  outboxTrigger('lp', 'lesson_progress', 'INSERT', 'lesson_progress', 'NEW.lesson_id'),
+  outboxTrigger('lp', 'lesson_progress', 'UPDATE', 'lesson_progress', 'NEW.lesson_id'),
+  syncIdTrigger('question_responses', 'qr'),
+  outboxTrigger('qr', 'question_responses', 'INSERT', 'question_responses', deviceKey('qr'), 'NEW.sync_id IS NULL'),
+  outboxTrigger('ss', 'study_sessions', 'INSERT', 'study_sessions', 'NEW.id'),
+  outboxTrigger('ss', 'study_sessions', 'UPDATE', 'study_sessions', 'NEW.id'),
+  outboxTrigger('xp', 'xp_ledger', 'INSERT', 'xp_ledger', "NEW.reason || ':' || NEW.ref"),
+  outboxTrigger('fc', 'fsrs_cards', 'INSERT', 'fsrs_cards', 'NEW.card_id'),
+  outboxTrigger('fc', 'fsrs_cards', 'UPDATE', 'fsrs_cards', 'NEW.card_id'),
+  syncIdTrigger('card_reviews', 'cr'),
+  outboxTrigger('cr', 'card_reviews', 'INSERT', 'card_reviews', deviceKey('cr'), 'NEW.sync_id IS NULL'),
+  syncIdTrigger('game_rounds', 'gr'),
+  outboxTrigger('gr', 'game_rounds', 'INSERT', 'game_rounds', deviceKey('gr'), 'NEW.sync_id IS NULL'),
+  outboxTrigger('dc', 'daily_challenges', 'INSERT', 'daily_challenges', 'NEW.day'),
+  outboxTrigger('la', 'lab_attempts', 'INSERT', 'lab_attempts', 'NEW.id'),
+  outboxTrigger('la', 'lab_attempts', 'UPDATE', 'lab_attempts', 'NEW.id'),
+  syncIdTrigger('interview_answers', 'ia'),
+  outboxTrigger('ia', 'interview_answers', 'INSERT', 'interview_answers', deviceKey('ia'), 'NEW.sync_id IS NULL'),
+  outboxTrigger('ia', 'interview_answers', 'UPDATE', 'interview_answers', 'NEW.sync_id', 'NEW.sync_id IS NOT NULL AND OLD.sync_id IS NOT NULL'),
+  outboxTrigger('ms', 'mock_sessions', 'INSERT', 'mock_sessions', 'NEW.id'),
+  outboxTrigger('bm', 'interview_bookmarks', 'INSERT', 'interview_bookmarks', 'NEW.question_id'),
+  outboxTrigger('bm', 'interview_bookmarks', 'DELETE', 'interview_bookmarks', oldOr('NEW.question_id')),
+  outboxTrigger('pf', 'kv', 'INSERT', 'profile', "'profile'", "NEW.key = 'settings'"),
+  outboxTrigger('pf', 'kv', 'UPDATE', 'profile', "'profile'", "NEW.key = 'settings'"),
+].join('\n');
+
 /**
  * Ordered, append-only migrations. Never edit a released migration; add a new one.
  * PRAGMA user_version tracks how many have been applied.
@@ -152,6 +207,33 @@ const MIGRATIONS: string[] = [
     question_id TEXT PRIMARY KEY NOT NULL,
     created_at INTEGER NOT NULL
   );
+  `,
+  // v5 (Phase 5): cloud sync. Triggers record every local change in an outbox, so screens need
+  // no sync code. While remote changes are applied, a row in sync_applying suppresses them.
+  `
+  INSERT OR IGNORE INTO kv (key, value) VALUES ('device_id', lower(hex(randomblob(8))));
+
+  CREATE TABLE IF NOT EXISTS outbox (
+    collection TEXT NOT NULL,
+    key TEXT NOT NULL,
+    changed_at INTEGER NOT NULL,
+    PRIMARY KEY (collection, key)
+  );
+  CREATE TABLE IF NOT EXISTS sync_applying (flag INTEGER PRIMARY KEY);
+
+  ALTER TABLE question_responses ADD COLUMN sync_id TEXT;
+  ALTER TABLE card_reviews ADD COLUMN sync_id TEXT;
+  ALTER TABLE game_rounds ADD COLUMN sync_id TEXT;
+  ALTER TABLE interview_answers ADD COLUMN sync_id TEXT;
+  UPDATE question_responses SET sync_id = (SELECT value FROM kv WHERE key = 'device_id') || ':qr:' || id;
+  UPDATE card_reviews SET sync_id = (SELECT value FROM kv WHERE key = 'device_id') || ':cr:' || id;
+  UPDATE game_rounds SET sync_id = (SELECT value FROM kv WHERE key = 'device_id') || ':gr:' || id;
+  UPDATE interview_answers SET sync_id = (SELECT value FROM kv WHERE key = 'device_id') || ':ia:' || id;
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_qr_sync ON question_responses(sync_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_cr_sync ON card_reviews(sync_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_gr_sync ON game_rounds(sync_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_ia_sync ON interview_answers(sync_id);
+  ${SYNC_TRIGGERS}
   `,
 ];
 

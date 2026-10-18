@@ -39,6 +39,8 @@ export const DEFAULT_SETTINGS: Settings = {
 interface SettingsCtx {
   settings: Settings;
   update: (patch: Partial<Settings>) => Promise<void>;
+  /** Re-read from the database (after cloud sync changed profile fields). */
+  reload: () => Promise<void>;
 }
 
 const Ctx = createContext<SettingsCtx | null>(null);
@@ -47,17 +49,22 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const [settings, setSettings] = useState<Settings | null>(null);
 
-  useEffect(() => {
-    db.getFirstAsync<{ value: string }>('SELECT value FROM kv WHERE key = ?', 'settings').then((row) => {
-      let stored: Partial<Settings> = {};
-      try {
-        stored = row ? (JSON.parse(row.value) as Partial<Settings>) : {};
-      } catch {
-        // Corrupt settings fall back to defaults rather than blocking app start.
-      }
-      setSettings({ ...DEFAULT_SETTINGS, ...stored });
-    });
+  const read = useCallback(async (): Promise<Settings> => {
+    const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM kv WHERE key = ?', 'settings');
+    let stored: Partial<Settings> = {};
+    try {
+      stored = row ? (JSON.parse(row.value) as Partial<Settings>) : {};
+    } catch {
+      // Corrupt settings fall back to defaults rather than blocking app start.
+    }
+    return { ...DEFAULT_SETTINGS, ...stored };
   }, [db]);
+
+  useEffect(() => {
+    read().then(setSettings);
+  }, [read]);
+
+  const reload = useCallback(async () => setSettings(await read()), [read]);
 
   const update = useCallback(
     async (patch: Partial<Settings>) => {
@@ -73,7 +80,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   if (!settings) return null; // splash screen stays visible until settings load
-  return <Ctx.Provider value={{ settings, update }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ settings, update, reload }}>{children}</Ctx.Provider>;
 }
 
 export function useSettings() {

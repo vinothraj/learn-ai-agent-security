@@ -13,7 +13,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "validate:content": "npm run validate --workspace packages/content",
-    "check": "npm run typecheck && npm run test && npm run validate:content"
+    "check": "npm run typecheck && npm run test && npm run validate:content",
+    "api": "npm run dev --workspace apps/api"
   },
   "engines": {
     "node": ">=22"

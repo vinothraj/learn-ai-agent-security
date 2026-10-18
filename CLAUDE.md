@@ -19,13 +19,17 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
 - **Phase 4 (interview prep): done.** 40-question bank (27 curated + 13 from lessons), 7 role plans
   with auto-ticking weekly tasks, practice mode with transparent rubric scoring, self-rating and
   bookmarks, timed 10/20/30-min mock interviews with per-topic scorecards and revision links.
-- **Next: Phase 5.** Backend (Fastify + Postgres), Supabase Auth, RBAC, `/sync`, account deletion.
+- **Phase 5 (backend, auth, sync): done.** `apps/api` (Fastify 5 + Postgres/PGlite), Supabase JWT
+  verification (JWKS), server-side RBAC, append-only audit log, `/v1/sync` with shared merge rules,
+  data export and account deletion; app outbox triggers, sync engine, Account screen. See docs/backend.md.
+- **Next: Phase 6.** Security news ingestion (RSS/advisories, dedupe, classification, review queue).
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
 
 ```
 apps/mobile        Expo SDK 58 app (Expo Router, routes in src/app)
+apps/api           Fastify API, SQL migrations in src/db/migrations.ts, tests use in-memory PGlite
 packages/shared    Pure TS: zod schemas, dates, XP, streaks, stats, insights, tracking, recommender (+ vitest)
 packages/content   Seed content pack (roadmaps, lessons, threats) + schema/integrity tests
 MASTER_PROMPT.md   Product spec and phase plan
@@ -76,6 +80,12 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
 - Time tracking: credited only while foregrounded on a learning screen and within 60 s of the last
   touch (`activeMsForTick`). Every learning screen calls `useStudySession(activity, contentId)`.
 - Insight sentences are deterministic rules over recorded data (`buildInsights`); never invent numbers.
+- API: raw parameterized SQL through the tiny `Db` interface (pg in production, PGlite in dev/tests) instead
+  of an ORM. Append-only migrations in `apps/api/src/db/migrations.ts`. Every route validates input with zod
+  (`parse`) and protected routes use `requireRole`. Never trust role checks in the app alone.
+- Sync: every new syncable local table needs an outbox trigger (db/migrations.ts), an adapter
+  (src/sync/collections.ts), a zod schema and merge rule (shared/sync.ts). Compare records with `sameRecord`
+  (jsonb reorders keys). Local progress is never merged into a different account (sync_owner_id guard).
 - Theming: all colours come from `useTheme().theme`; respect `animate` for motion. Five modes, six accents.
 - The React Compiler is on. Lint enforces its rules (no ref reads during render, no sync setState in effects).
 - Android package id `com.vinoth.aiagentsecurity` is a placeholder; confirm it before the first Play upload,

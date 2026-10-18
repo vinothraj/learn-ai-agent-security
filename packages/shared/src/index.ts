@@ -14,3 +14,4 @@ export * from './labs';
 export * from './pack';
 export * from './labReport';
 export * from './interview';
+export * from './sync';

@@ -4,9 +4,28 @@
     {
       "name": "mobile-web-preview",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8081"
+      ],
       "cwd": "apps/mobile",
       "port": 8081
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "src/server.ts"
+      ],
+      "cwd": "apps/api",
+      "port": 4000,
+      "env": {
+        "PGLITE_DIR": "memory"
+      }
     }
   ]
 }
