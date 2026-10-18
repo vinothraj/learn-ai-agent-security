@@ -17,7 +17,8 @@
     "api": "npm run dev --workspace apps/api",
     "admin": "npm run dev --workspace apps/admin",
     "audit:deps": "node scripts/audit.mjs",
-    "coverage": "npm run coverage --workspaces --if-present"
+    "coverage": "npm run coverage --workspaces --if-present",
+    "site": "tsx scripts/build-site.ts"
   },
   "engines": {
     "node": ">=22"

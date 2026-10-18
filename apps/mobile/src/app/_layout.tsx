@@ -49,6 +49,7 @@ function AppStack() {
         <Stack.Screen name="interview/mock" options={{ animation: animate ? 'slide_from_bottom' : 'none', gestureEnabled: false }} />
         <Stack.Screen name="share" />
         <Stack.Screen name="tutor" />
+        <Stack.Screen name="privacy" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="account" />
       </Stack>

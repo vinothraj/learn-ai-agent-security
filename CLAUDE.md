@@ -51,7 +51,12 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   test, 48dp targets, app shortcuts (`plugins/withAndroidShortcuts.js`), home-screen widget
   (react-native-android-widget, `src/widget/`, lazy-loaded), sync push batched (7x faster), icons per-file
   (bundle -31%). See docs/security.md and docs/performance.md.
-- **Next: Phase 12.** Play Store release: signing, AAB via EAS, listing, privacy policy, Data safety, closed testing.
+- **Phase 12 (Play release prep): done in repo.** EAS profiles (development/preview/production, submit
+  internal + closed), version 1.0.0, release builds refuse non-https API or dev auth, branded icon set, privacy
+  policy + deletion text in `packages/content/src/legal.ts` (in-app `/privacy` and `npm run site` → GitHub Pages),
+  store listing, Data safety answers, graphics and screenshots in docs/play-store/, step-by-step docs/release.md.
+  Remaining is account work only (Play Console, EAS init, env vars, closed test). Set `LEGAL.contactEmail`.
+- **Next: Phase 13** (Pro + community), only when asked.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout

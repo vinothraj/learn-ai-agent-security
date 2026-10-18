@@ -3,6 +3,7 @@ import { flashcards } from './flashcards';
 import { games } from './games';
 import { interviewBank, roles } from './interview';
 export { fromLessons } from './interview';
+export * from './legal';
 import { agentLessons } from './lessons/agents';
 import { foundationsLessons } from './lessons/foundations';
 import { fundamentalsLessons } from './lessons/fundamentals';

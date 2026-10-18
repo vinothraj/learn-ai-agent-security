@@ -299,6 +299,12 @@ export default function SettingsScreen() {
         </T>
         <Button kind="danger" label="Reset all progress" onPress={confirmReset} />
       </Card>
+      <Card onPress={() => router.push('/privacy')} accessibilityLabel="Privacy policy and data deletion">
+        <T v="heading">Privacy policy</T>
+        <T v="caption" muted>
+          What is stored, where, and how to delete it
+        </T>
+      </Card>
       <T v="caption" muted style={{ textAlign: 'center' }}>
         Learn AI & Agent Security · content pack {contentPack.version}
       </T>

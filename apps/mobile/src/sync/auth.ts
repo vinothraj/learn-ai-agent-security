@@ -13,7 +13,13 @@ export const cloud = {
   anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
 };
 
-export const cloudConfigured = !!cloud.apiUrl && (cloud.authMode === 'dev' || (!!cloud.supabaseUrl && !!cloud.anonKey));
+/**
+ * Release builds only talk to an https API with real (Supabase) sign-in. A misconfigured store build
+ * (localhost API or dev tokens) falls back to offline mode instead of shipping a test login.
+ */
+const releaseSafe = __DEV__ || (cloud.apiUrl.startsWith('https://') && cloud.authMode === 'supabase' && cloud.supabaseUrl.startsWith('https://'));
+
+export const cloudConfigured = releaseSafe && !!cloud.apiUrl && (cloud.authMode === 'dev' || (!!cloud.supabaseUrl && !!cloud.anonKey));
 
 export interface Session {
   accessToken: string;
