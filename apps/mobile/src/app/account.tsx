@@ -1,7 +1,7 @@
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 import { router } from 'expo-router';
-import { ChevronLeft, Cloud, CloudOff, Download, LogOut, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Cloud, CloudOff, Download, LogOut, RefreshCw, ShieldCheck, Trash2 } from '@/components/icons';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 

@@ -13,7 +13,7 @@ import {
   Settings,
   ShieldAlert,
   Target,
-} from 'lucide-react-native';
+} from '@/components/icons';
 import { Pressable, View } from 'react-native';
 
 import { WeekBars } from '@/components/charts';

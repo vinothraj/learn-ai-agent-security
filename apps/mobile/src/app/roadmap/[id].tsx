@@ -1,7 +1,7 @@
 import { lessonById, roadmapById } from '@laas/content';
 import { isLessonUnlocked, roadmapProgress } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, CircleCheck, Clock, Lock, Play } from 'lucide-react-native';
+import { ChevronLeft, CircleCheck, Clock, Lock, Play } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 
 import { Appear, Card, ProgressBar, Row, Screen, T, Tag } from '@/components/ui';

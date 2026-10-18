@@ -1,7 +1,7 @@
 import { contentPack, gameById, labById, lessonById, roleById } from '@laas/content';
 import { itemsForRole, parseDayKey, dayKey } from '@laas/shared';
 import { router } from 'expo-router';
-import { BookmarkCheck, ChevronLeft, ChevronRight, CircleCheck, Circle, Mic, Target } from 'lucide-react-native';
+import { BookmarkCheck, ChevronLeft, ChevronRight, CircleCheck, Circle, Mic, Target } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 

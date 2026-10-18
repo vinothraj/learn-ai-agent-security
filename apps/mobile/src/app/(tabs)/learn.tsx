@@ -1,7 +1,7 @@
 import { contentPack } from '@laas/content';
 import { roadmapProgress } from '@laas/shared';
 import { router } from 'expo-router';
-import { ChevronRight, MessageCircleQuestion } from 'lucide-react-native';
+import { ChevronRight, MessageCircleQuestion } from '@/components/icons';
 import { View } from 'react-native';
 
 import { Appear, Card, ProgressBar, Row, Screen, T, Tag } from '@/components/ui';

@@ -12,7 +12,7 @@ import {
 } from '@laas/shared';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { ChevronDown, ChevronUp, Clock, Mic, Timer, Trophy, X } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Clock, Mic, Timer, Trophy, X } from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';

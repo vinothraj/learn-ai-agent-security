@@ -1,5 +1,5 @@
 import type { Lab } from '@laas/shared';
-import { Bot, Database, Globe, Server, Skull, UserRound, Wrench, type LucideIcon } from 'lucide-react-native';
+import { Bot, Database, Globe, Server, Skull, UserRound, Wrench, type LucideIcon } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { G, Line, Polygon, Text as SvgText } from 'react-native-svg';

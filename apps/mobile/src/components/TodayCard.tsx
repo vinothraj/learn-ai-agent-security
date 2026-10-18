@@ -1,5 +1,5 @@
 import { accuracyByPart, buildInsights, emptyDay, learnRing, practiceRing, reviseRing } from '@laas/shared';
-import { Flame, Snowflake, Sparkles } from 'lucide-react-native';
+import { Flame, Snowflake, Sparkles } from '@/components/icons';
 import { View } from 'react-native';
 
 import { useProgress } from '@/state/progress';

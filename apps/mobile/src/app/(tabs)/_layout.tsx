@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { BookOpen, Dumbbell, House, Newspaper, UserRound } from 'lucide-react-native';
+import { BookOpen, Dumbbell, House, Newspaper, UserRound } from '@/components/icons';
 
 import { useSettings } from '@/state/settings';
 import { useTheme } from '@/theme/ThemeProvider';

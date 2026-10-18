@@ -1,6 +1,6 @@
 import { contentPack } from '@laas/content';
 import { router } from 'expo-router';
-import { Brain, CalendarCheck, ChevronRight, FlaskConical, MessageSquareText, Target, Zap, type LucideIcon } from 'lucide-react-native';
+import { Brain, CalendarCheck, ChevronRight, FlaskConical, MessageSquareText, Target, Zap, type LucideIcon } from '@/components/icons';
 import { View } from 'react-native';
 
 import { GAME_ICONS } from '@/components/games';

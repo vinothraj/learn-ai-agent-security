@@ -1,7 +1,7 @@
 import { addDays, compareWeeks, emptyDay, minutes, parseDayKey, series } from '@laas/shared';
 import * as Sharing from 'expo-sharing';
 import { router } from 'expo-router';
-import { ChevronLeft, Share2, ShieldCheck } from 'lucide-react-native';
+import { ChevronLeft, Share2, ShieldCheck } from '@/components/icons';
 import { useRef, useState } from 'react';
 import { Alert, Platform, Pressable, View, type HostInstance } from 'react-native';
 import { captureRef } from 'react-native-view-shot';

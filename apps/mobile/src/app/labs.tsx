@@ -1,7 +1,7 @@
 import { contentPack } from '@laas/content';
 import type { Level } from '@laas/shared';
 import { router } from 'expo-router';
-import { ChevronLeft, CircleCheck, Clock, FlaskConical, Star } from 'lucide-react-native';
+import { ChevronLeft, CircleCheck, Clock, FlaskConical, Star } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 
 import { Appear, Card, IconBadge, ProgressBar, Row, Screen, SectionTitle, T, Tag } from '@/components/ui';

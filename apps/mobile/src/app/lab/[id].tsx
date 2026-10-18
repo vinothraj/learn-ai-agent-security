@@ -23,7 +23,7 @@ import {
   Star,
   TriangleAlert,
   X,
-} from 'lucide-react-native';
+} from '@/components/icons';
 import { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, View, type ScrollViewInstance } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';

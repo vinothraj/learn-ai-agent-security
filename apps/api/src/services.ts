@@ -74,26 +74,51 @@ const toEnvelope = (r: StoredRow): SyncEnvelope => ({
  * inside a transaction; only records that actually changed get a new server sequence number.
  */
 export async function applySync(db: Db, userId: string, req: SyncRequest): Promise<SyncResponse> {
-  await db.transaction(async (tx) => {
-    for (const change of req.changes) {
+  if (req.changes.length) {
+    await db.transaction(async (tx) => {
+      // One locking read for every key in the batch, then one bulk upsert (was two queries per change).
       const { rows } = await tx.query<StoredRow>(
-        `SELECT collection, record_key, data, updated_at, deleted, server_seq FROM sync_records
-         WHERE user_id = $1 AND collection = $2 AND record_key = $3 FOR UPDATE`,
-        [userId, change.collection, change.key],
+        `SELECT s.collection, s.record_key, s.data, s.updated_at, s.deleted, s.server_seq FROM sync_records s
+         JOIN unnest($2::text[], $3::text[]) AS k(collection, record_key) ON s.collection = k.collection AND s.record_key = k.record_key
+         WHERE s.user_id = $1 FOR UPDATE OF s`,
+        [userId, req.changes.map((c) => c.collection), req.changes.map((c) => c.key)],
       );
-      const existing = rows[0] ? toEnvelope(rows[0]) : null;
-      const incoming: SyncEnvelope = { ...change, data: change.deleted ? (existing?.data ?? {}) : change.data };
-      const merged = mergeRecord(existing, incoming);
-      if (existing && sameRecord(merged, existing)) continue;
+      const id = (collection: string, key: string) => `${collection}\u0000${key}`;
+      const stored = new Map(rows.map((r) => [id(r.collection, r.record_key), toEnvelope(r)]));
+      const current = new Map(stored);
+      const touched = new Set<string>();
+      // Changes are applied in order, so duplicate keys in one batch merge exactly as sequential pushes would.
+      for (const change of req.changes) {
+        const k = id(change.collection, change.key);
+        const existing = current.get(k) ?? null;
+        const incoming: SyncEnvelope = { ...change, data: change.deleted ? (existing?.data ?? {}) : change.data };
+        const merged = mergeRecord(existing, incoming);
+        if (existing && sameRecord(merged, existing)) continue;
+        current.set(k, merged);
+        touched.add(k);
+      }
+      const writes = [...touched].map((k) => current.get(k)!).filter((m) => {
+        const before = stored.get(id(m.collection, m.key));
+        return !before || !sameRecord(m, before);
+      });
+      if (!writes.length) return;
       await tx.query(
         `INSERT INTO sync_records (user_id, collection, record_key, data, updated_at, deleted)
-         VALUES ($1, $2, $3, $4, $5, $6)
+         SELECT $1, t.collection, t.record_key, t.data::jsonb, t.updated_at, t.deleted
+         FROM unnest($2::text[], $3::text[], $4::text[], $5::bigint[], $6::boolean[]) AS t(collection, record_key, data, updated_at, deleted)
          ON CONFLICT (user_id, collection, record_key) DO UPDATE
            SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at, deleted = EXCLUDED.deleted, server_seq = nextval('sync_seq')`,
-        [userId, merged.collection, merged.key, JSON.stringify(merged.data), merged.updatedAt, !!merged.deleted],
+        [
+          userId,
+          writes.map((m) => m.collection),
+          writes.map((m) => m.key),
+          writes.map((m) => JSON.stringify(m.data)),
+          writes.map((m) => m.updatedAt),
+          writes.map((m) => !!m.deleted),
+        ],
       );
-    }
-  });
+    });
+  }
 
   const { rows } = await db.query<StoredRow>(
     `SELECT collection, record_key, data, updated_at, deleted, server_seq FROM sync_records

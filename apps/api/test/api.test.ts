@@ -147,6 +147,19 @@ describe('sync', () => {
     expect(otherPull.changes).toHaveLength(0);
   });
 
+  it('merges duplicate keys within one batch like sequential pushes', async () => {
+    const u = await t.login();
+    const sync = (cursor: number, changes: SyncEnvelope[]) => t.app.inject({ method: 'POST', url: '/v1/sync', headers: u.headers, payload: { cursor, changes } });
+    const r = (
+      await sync(0, [progress('a-trust-boundaries', 'in_progress', 1000), progress('a-trust-boundaries', 'completed', 2000), progress('a-trust-boundaries', 'in_progress', 3000)])
+    ).json();
+    const rows = r.changes.filter((c: SyncEnvelope) => c.key === 'a-trust-boundaries');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].data).toMatchObject({ status: 'completed', bestScore: 67 }); // completion stays sticky
+    // Re-sending the same batch is a no-op: nothing new to pull.
+    expect((await sync(r.cursor, [progress('a-trust-boundaries', 'completed', 2000)])).json().changes).toHaveLength(0);
+  });
+
   it('rejects invalid payloads and oversized batches', async () => {
     const u = await t.login();
     const post = (payload: unknown) => t.app.inject({ method: 'POST', url: '/v1/sync', headers: u.headers, payload: payload as object });

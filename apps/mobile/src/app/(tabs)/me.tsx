@@ -27,7 +27,7 @@ import {
   Target,
   TrendingUp,
   type LucideIcon,
-} from 'lucide-react-native';
+} from '@/components/icons';
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 

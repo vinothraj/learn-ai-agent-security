@@ -1,6 +1,6 @@
 import { contentPack } from '@laas/content';
 import { router } from 'expo-router';
-import { Bell, Bot, ShieldCheck, Target } from 'lucide-react-native';
+import { Bell, Bot, ShieldCheck, Target } from '@/components/icons';
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';

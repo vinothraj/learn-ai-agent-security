@@ -46,7 +46,26 @@
         }
       ],
       "expo-sharing",
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withAndroidShortcuts",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Progress",
+              "label": "Learning progress",
+              "description": "Streak, today’s minutes and your next step",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

@@ -12,7 +12,7 @@ import {
   Target,
   Trophy,
   X,
-} from 'lucide-react-native';
+} from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native';
 import Animated, { FadeInRight, ZoomIn } from 'react-native-reanimated';

@@ -2,7 +2,7 @@ import { contentPack, lessonById } from '@laas/content';
 import { dayKey, quizXp, shuffle, type QuizQuestion } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Trophy, X } from 'lucide-react-native';
+import { Trophy, X } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInRight, ZoomIn } from 'react-native-reanimated';

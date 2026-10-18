@@ -1,5 +1,5 @@
 import { shuffle, type QuizQuestion } from '@laas/shared';
-import { CircleCheck, CircleX } from 'lucide-react-native';
+import { CircleCheck, CircleX } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';

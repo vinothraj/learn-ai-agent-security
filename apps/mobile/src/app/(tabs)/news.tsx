@@ -1,7 +1,7 @@
 import { contentPack, lessonById } from '@laas/content';
 import { pickDaily } from '@laas/shared';
 import { router } from 'expo-router';
-import { ExternalLink, Info, RefreshCw, ShieldAlert } from 'lucide-react-native';
+import { ExternalLink, Info, RefreshCw, ShieldAlert } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 

@@ -1,7 +1,7 @@
 import { contentPack } from '@laas/content';
 import { buildLessonIndex, guardQuestion, lessonAnswer, refusal, type LessonIndex, type TutorResponse } from '@laas/shared';
 import { router } from 'expo-router';
-import { BookOpen, ChevronLeft, Send, Sparkles } from 'lucide-react-native';
+import { BookOpen, ChevronLeft, Send, Sparkles } from '@/components/icons';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';

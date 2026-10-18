@@ -2,7 +2,7 @@ import { contentPack, interviewItemById, lessonById } from '@laas/content';
 import { dayKey, scoreAnswer, type AnswerScore } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 

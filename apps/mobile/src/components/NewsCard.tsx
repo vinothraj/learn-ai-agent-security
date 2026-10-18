@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { BadgeCheck, ExternalLink, Quote, ShieldAlert, Sparkles, TriangleAlert } from 'lucide-react-native';
+import { BadgeCheck, ExternalLink, Quote, ShieldAlert, Sparkles, TriangleAlert } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 
 import { relativeDate, type NewsArticle } from '@/state/news';

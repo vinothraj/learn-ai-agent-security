@@ -46,12 +46,12 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   domain-vocabulary on-topic gate, deterministic refusals, `lessonAnswer`. Routes: tutor, interview feedback,
   quiz drafts → `ai_suggestions` (four-eyes review), news summary drafts (`aiDrafted` → origin `ai`), usage.
   Mobile `/tutor` (offline lesson answers; AI when `features.ai`), opt-in AI interview feedback. Admin "AI drafts".
-- **Phase 11 (hardening): in progress.** Done: SSRF guard for feeds (`net.ts`, every redirect hop checked),
-  feed URL shape validation, https-only `openExternal`, admin production CSP (vite plugin), CI security job
-  (`npm run audit:deps` with expiring allowlist for build-only braces/node-forge; gitleaks), uuid override,
-  mobile vitest + WCAG contrast test (all modes/accents pass AA), chip touch targets 48dp, /android /ios ignored.
-  Left: app shortcuts config plugin, home-screen widget (react-native-android-widget; needs EAS build to verify),
-  docs/security.md (ASVS checklist), performance pass, coverage reporting.
+- **Phase 11 (hardening): done.** SSRF guard (`net.ts`, every redirect hop), https-only `openExternal`, admin
+  production CSP, CI security job (audit gate with expiring allowlist, gitleaks) and coverage floors, WCAG contrast
+  test, 48dp targets, app shortcuts (`plugins/withAndroidShortcuts.js`), home-screen widget
+  (react-native-android-widget, `src/widget/`, lazy-loaded), sync push batched (7x faster), icons per-file
+  (bundle -31%). See docs/security.md and docs/performance.md.
+- **Next: Phase 12.** Play Store release: signing, AAB via EAS, listing, privacy policy, Data safety, closed testing.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
@@ -125,4 +125,9 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
 - The React Compiler is on. Lint enforces its rules (no ref reads during render, no sync setState in effects).
 - Android package id `com.vinoth.aiagentsecurity` is a placeholder; confirm it before the first Play upload,
   because it can never change after that.
+- Icons: import from `@/components/icons` (one file per icon); a lint rule blocks `lucide-react-native` root imports.
+- The widget library throws at import without its native module, so only `src/widget/index.ts` may load it
+  (lazy `require`, guarded by `TurboModuleRegistry.get('AndroidWidget')`). App entry is `apps/mobile/index.ts`.
+- Verify config plugins with `npx expo prebuild --platform android --no-install --clean`, then delete
+  `android/` and revert the `package.json` script change prebuild makes.
 - The web preview (`metro.config.js` headers, `.claude/launch.json`) is for UI checks only; Android is the target.

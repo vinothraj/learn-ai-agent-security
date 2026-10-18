@@ -1,6 +1,6 @@
 import { contentPack } from '@laas/content';
 import { SELF_RATINGS, tokens, type AnswerScore, type InterviewItem } from '@laas/shared';
-import { Bookmark, BookmarkCheck, CircleCheck, CircleX, Lightbulb, MessageCircleQuestion, Sparkles } from 'lucide-react-native';
+import { Bookmark, BookmarkCheck, CircleCheck, CircleX, Lightbulb, MessageCircleQuestion, Sparkles } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';

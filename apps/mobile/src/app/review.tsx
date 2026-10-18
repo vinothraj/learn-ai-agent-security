@@ -2,7 +2,7 @@ import { flashcardById, lessonById } from '@laas/content';
 import { dayKey, formatInterval, GRADES, previewIntervals, Rating, REVIEW_XP, reviewCard, type Grade } from '@laas/shared';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Brain, Layers, X } from 'lucide-react-native';
+import { Brain, Layers, X } from '@/components/icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming, ZoomIn } from 'react-native-reanimated';

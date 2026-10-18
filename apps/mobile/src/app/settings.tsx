@@ -1,7 +1,7 @@
 import { contentPack } from '@laas/content';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 

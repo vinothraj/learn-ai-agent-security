@@ -14,6 +14,7 @@ import { NewsProvider } from '@/state/news';
 import { NotificationManager } from '@/state/notifications';
 import { SyncProvider } from '@/state/sync';
 import { TrackerProvider } from '@/state/tracker';
+import { WidgetSync } from '@/state/widgetSync';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync();
@@ -69,6 +70,7 @@ export default function RootLayout() {
                       <TrackerProvider>
                         <AppStack />
                         <NotificationManager />
+                        <WidgetSync />
                       </TrackerProvider>
                     </NewsProvider>
                   </SyncProvider>
