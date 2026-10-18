@@ -6,10 +6,11 @@ import { ChevronLeft } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AnswerComposer, FeedbackPanel, QuestionHeader } from '@/components/interview';
+import { AiFeedbackCard, AnswerComposer, FeedbackPanel, QuestionHeader } from '@/components/interview';
 import { Button, Card, Screen, T } from '@/components/ui';
 import { awardXp, rateInterviewAnswer, saveInterviewAnswer, setBookmark } from '@/db/repo';
 import { useProgress } from '@/state/progress';
+import { useSync } from '@/state/sync';
 import { useStudySession } from '@/state/tracker';
 import { useHaptics, useTheme } from '@/theme/ThemeProvider';
 
@@ -23,6 +24,7 @@ export default function PracticeQuestion() {
   const { theme } = useTheme();
   const haptic = useHaptics();
   const { refresh, bookmarks, questionStats } = useProgress();
+  const sync = useSync();
   useStudySession('interview', id);
 
   const [result, setResult] = useState<{ score: AnswerScore; answer: string | number; rowId: number } | null>(null);
@@ -97,6 +99,11 @@ export default function PracticeQuestion() {
               refresh();
             }}
           />
+          {sync.aiAvailable && typeof result.answer === 'string' ? (
+            <AiFeedbackCard
+              request={() => sync.call('/v1/ai/interview-feedback', { method: 'POST', body: { itemId: item.id, answer: result.answer } })}
+            />
+          ) : null}
           {lesson ? (
             <Card onPress={() => router.push(`/lesson/${lesson.id}`)} accessibilityLabel={`Revise ${lesson.title}`}>
               <T v="caption" muted>

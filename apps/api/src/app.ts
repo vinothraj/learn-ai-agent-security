@@ -4,12 +4,15 @@ import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { createProvider, type AIProvider } from './ai/providers';
+import { AiService } from './ai/service';
 import { createVerifier, type Verifier } from './auth';
 import type { Config } from './config';
 import type { Db } from './db';
 import { HttpError } from './http';
 import { openApiSpec } from './openapi';
 import { accountRoutes } from './routes/account';
+import { aiRoutes } from './routes/ai';
 import { adminRoutes } from './routes/admin';
 import { analyticsRoutes } from './routes/analytics';
 import { contentRoutes } from './routes/content';
@@ -23,7 +26,19 @@ import { upsertUser } from './services';
 const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/v1/news', '/v1/content/manifest', '/dev/token']);
 const PUBLIC_PREFIXES = ['/docs', '/v1/content/packs/'];
 
-export async function buildApp({ config, db, verifier, push }: { config: Config; db: Db; verifier?: Verifier; push?: PushSender | null }): Promise<FastifyInstance> {
+export async function buildApp({
+  config,
+  db,
+  verifier,
+  push,
+  ai: aiProvider,
+}: {
+  config: Config;
+  db: Db;
+  verifier?: Verifier;
+  push?: PushSender | null;
+  ai?: AIProvider;
+}): Promise<FastifyInstance> {
   const verify = verifier ?? createVerifier(config);
   // null = push disabled: notifications are still recorded (status error) but nothing is sent.
   const sender = push !== undefined ? push : config.PUSH === 'on' ? expoPushSender(config.EXPO_ACCESS_TOKEN) : null;
@@ -87,7 +102,14 @@ export async function buildApp({ config, db, verifier, push }: { config: Config;
     return reply.code(500).send({ error: 'Internal server error' });
   });
 
-  await app.register(systemRoutes, { db, config });
+  const ai = new AiService(
+    db,
+    aiProvider ?? createProvider(config),
+    { dailyTokenBudget: config.AI_DAILY_TOKEN_BUDGET, userDailyRequests: config.AI_USER_DAILY_REQUESTS, timeoutMs: config.AI_TIMEOUT_MS },
+    app.log,
+  );
+
+  await app.register(systemRoutes, { db, config, ai });
   await app.register(accountRoutes, { db, config });
   await app.register(syncRoutes, { db });
   await app.register(adminRoutes, { db });
@@ -95,5 +117,6 @@ export async function buildApp({ config, db, verifier, push }: { config: Config;
   await app.register(contentRoutes, { db, push: sender });
   await app.register(deviceRoutes, { db });
   await app.register(analyticsRoutes, { db, config });
+  await app.register(aiRoutes, { db, ai });
   return app;
 }

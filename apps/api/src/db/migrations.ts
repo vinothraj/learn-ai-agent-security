@@ -233,6 +233,47 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
         ON CONFLICT (key) DO NOTHING;
     `,
   },
+  {
+    id: '006_ai',
+    sql: `
+      -- Token and request accounting for budgets and per-user limits (user_id NULL = admin/system tasks).
+      CREATE TABLE ai_usage (
+        day date NOT NULL,
+        user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+        user_key text GENERATED ALWAYS AS (COALESCE(user_id::text, '')) STORED,
+        task text NOT NULL,
+        requests integer NOT NULL DEFAULT 0,
+        input_tokens bigint NOT NULL DEFAULT 0,
+        output_tokens bigint NOT NULL DEFAULT 0,
+        UNIQUE (day, user_key, task)
+      );
+      CREATE TABLE ai_cache (
+        key text PRIMARY KEY,
+        task text NOT NULL,
+        output jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        expires_at timestamptz NOT NULL
+      );
+      CREATE INDEX idx_ai_cache_expires ON ai_cache(expires_at);
+      -- AI-generated drafts never publish themselves: they wait here for a human decision.
+      CREATE TABLE ai_suggestions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        kind text NOT NULL CHECK (kind IN ('quiz')),
+        lesson_id text NOT NULL,
+        payload jsonb NOT NULL,
+        status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        provider text NOT NULL,
+        model text NOT NULL,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        reviewed_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        reviewed_at timestamptz,
+        note text
+      );
+      CREATE INDEX idx_ai_suggestions_status ON ai_suggestions(status, created_at DESC);
+      UPDATE feature_flags SET description = 'Optional AI features (needs AI_PROVIDER on the server)' WHERE key = 'ai';
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

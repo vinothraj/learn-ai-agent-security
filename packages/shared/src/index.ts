@@ -18,3 +18,4 @@ export * from './sync';
 export * from './packCheck';
 export * from './notifications';
 export * from './analytics';
+export * from './tutor';

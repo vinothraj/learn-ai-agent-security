@@ -18,6 +18,8 @@ const Review = z.strictObject({
   reason: z.string().trim().max(300).optional(),
   category: z.enum(CATEGORIES).optional(),
   summary: z.string().trim().min(10).max(600).optional(),
+  /** The summary started as an AI draft (labelled as AI-assisted in the app). */
+  aiDrafted: z.boolean().default(false),
 });
 const Id = z.object({ id: z.uuid() });
 const domain = z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i);
@@ -113,9 +115,9 @@ export async function newsRoutes(app: FastifyInstance, { db, push }: { db: Db; p
       `UPDATE news_articles SET review_status = $2, review_reason = COALESCE($3, review_reason), reviewed_by = $4, reviewed_at = now(),
          category = COALESCE($5, category), defense = COALESCE($6, defense), lesson_id = COALESCE($7, lesson_id),
          lab_id = COALESCE($8, lab_id), interview_id = COALESCE($9, interview_id),
-         summary = COALESCE($10, summary), summary_origin = CASE WHEN $10::text IS NULL THEN summary_origin ELSE 'editor' END
+         summary = COALESCE($10, summary), summary_origin = CASE WHEN $10::text IS NULL THEN summary_origin WHEN $11 THEN 'ai' ELSE 'editor' END
        WHERE id = $1 RETURNING id, title, high_impact, summary`,
-      [id, status, body.reason ?? null, auth.id, body.category ?? null, info?.defense ?? null, info?.lessonId ?? null, info?.labId ?? null, info?.interviewId ?? null, body.summary ?? null],
+      [id, status, body.reason ?? null, auth.id, body.category ?? null, info?.defense ?? null, info?.lessonId ?? null, info?.labId ?? null, info?.interviewId ?? null, body.summary ?? null, body.aiDrafted],
     );
     if (!rows.length) throw new HttpError(404, 'Article not found');
     await audit(db, auth.id, `news.${body.action}`, { type: 'news_article', id }, { reason: body.reason ?? null, category: body.category ?? null });

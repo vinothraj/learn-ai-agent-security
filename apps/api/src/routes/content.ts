@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Db } from '../db';
 import { HttpError, parse, requireAuth, requireRole } from '../http';
+import { invalidateContentCache } from '../contentPack';
 import { notifyTopic, type PushSender } from '../push';
 import { audit } from '../services';
 
@@ -131,6 +132,7 @@ export async function contentRoutes(app: FastifyInstance, { db, push }: { db: Db
       );
       await audit(tx, auth.id, 'content.published', { type: 'content_version', id }, { label: row.label, checksum: row.checksum });
     });
+    invalidateContentCache();
     await notifyTopic(db, push, { topic: 'content', type: 'content', ref: id, title: 'New lessons are available', body: 'Fresh AI security content was published. Open the app to get it.', url: '/' }, req.log);
     return { id, status: 'published' };
   });

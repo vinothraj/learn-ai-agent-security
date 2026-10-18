@@ -34,6 +34,8 @@ interface SyncCtx {
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
   exportData: () => Promise<unknown>;
+  /** Server-side AI is configured and enabled, and the learner is signed in. */
+  aiAvailable: boolean;
   /** Authenticated API call; throws if signed out. */
   call: <T>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
   deleteAccount: (eraseLocal: boolean) => Promise<{ authAccountDeleted: boolean }>;
@@ -50,6 +52,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [serverAi, setServerAi] = useState(false);
   const busy = useRef(false);
   const sessionRef = useRef<Session | null>(null);
 
@@ -90,6 +93,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       // Offline: keep the cached session, profile stays unknown until next try.
     }
   }, [withSession]);
+
+  // Public feature switches (cached by the server for 5 minutes); offline simply means "no AI".
+  useEffect(() => {
+    if (!cloudConfigured) return;
+    fetch(`${cloud.apiUrl}/v1/config`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ features?: { ai?: boolean } }>) : null))
+      .then((c) => setServerAi(!!c?.features?.ai))
+      .catch(() => setServerAi(false));
+  }, [session]);
 
   // Restore the session on start; sync on resume and periodically while active.
   useEffect(() => {
@@ -179,6 +191,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         signOut,
         syncNow,
         exportData,
+        aiAvailable: serverAi && !!session,
         call,
         deleteAccount,
       }}>

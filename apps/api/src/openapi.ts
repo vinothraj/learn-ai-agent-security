@@ -83,6 +83,13 @@ export const openApiSpec = {
     '/v1/events': { post: { summary: 'Upload opt-in engagement events (idempotent, pseudonymous)', security: bearer, responses: ok('Accepted count') } },
     '/v1/me/analytics': { delete: { summary: 'Withdraw analytics consent and delete shared events', security: bearer, responses: ok('Deleted count') } },
     '/v1/admin/analytics': { get: { summary: 'Engagement metrics per MASTER_PROMPT §16, cohorts under 5 suppressed (admin)', security: bearer, responses: ok('Report') } },
+    '/v1/ai/tutor': { post: { summary: 'Ask the tutor: grounded on approved lessons, deterministic fallback, refuses offensive requests', security: bearer, responses: ok('Answer with lesson citations') } },
+    '/v1/ai/interview-feedback': { post: { summary: 'Rubric score plus optional AI feedback (answers are not cached)', security: bearer, responses: ok('Feedback') } },
+    '/v1/admin/ai/quiz': { post: { summary: 'Draft quiz questions from a lesson into the review queue (editor+)', security: bearer, responses: { 201: { description: 'Pending suggestion' } } } },
+    '/v1/admin/ai/suggestions': { get: { summary: 'AI draft review queue (editor+)', security: bearer, responses: ok('Suggestions') } },
+    '/v1/admin/ai/suggestions/{id}/review': { post: { summary: 'Approve or reject an AI draft (admin+, four-eyes, audited)', security: bearer, responses: ok('Reviewed') } },
+    '/v1/admin/news/{id}/ai-summary': { post: { summary: 'Draft a news summary for the reviewer (not saved)', security: bearer, responses: ok('Draft') } },
+    '/v1/admin/ai/usage': { get: { summary: 'AI provider, budget and usage today (admin)', security: bearer, responses: ok('Usage') } },
     '/v1/admin/audit': { get: { summary: 'Audit log (super-admin)', security: bearer, responses: ok('Entries') } },
   },
 };

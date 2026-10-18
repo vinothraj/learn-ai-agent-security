@@ -1,6 +1,6 @@
 import { contentPack } from '@laas/content';
 import { SELF_RATINGS, tokens, type AnswerScore, type InterviewItem } from '@laas/shared';
-import { Bookmark, BookmarkCheck, CircleCheck, CircleX, Lightbulb, MessageCircleQuestion } from 'lucide-react-native';
+import { Bookmark, BookmarkCheck, CircleCheck, CircleX, Lightbulb, MessageCircleQuestion, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -243,3 +243,87 @@ export function FeedbackPanel({
   );
 }
 
+
+interface AiFeedback {
+  score: number;
+  strengths: string[];
+  gaps: string[];
+  feedback: string;
+  confidence: 'low' | 'medium' | 'high';
+}
+
+/**
+ * Optional second opinion from the server's AI, only on request: the answer is sent once,
+ * is not stored or cached by the server, and the result is labelled as AI-generated.
+ */
+export function AiFeedbackCard({ request }: { request: () => Promise<{ ai: AiFeedback | null; fallbackReason?: string }> }) {
+  const { theme } = useTheme();
+  const [state, setState] = useState<{ status: 'idle' | 'loading' | 'error'; message?: string } | { status: 'done'; value: AiFeedback }>({ status: 'idle' });
+
+  const run = async () => {
+    setState({ status: 'loading' });
+    try {
+      const r = await request();
+      if (r.ai) setState({ status: 'done', value: r.ai });
+      else setState({ status: 'error', message: r.fallbackReason === 'user_limit' ? 'Daily AI limit reached. Try again tomorrow.' : 'AI feedback is unavailable right now.' });
+    } catch {
+      setState({ status: 'error', message: 'Could not reach the server.' });
+    }
+  };
+
+  if (state.status !== 'done') {
+    return (
+      <Card>
+        <Row>
+          <Sparkles size={18} color={theme.warning} />
+          <T v="heading" style={{ flex: 1 }}>
+            Want an AI second opinion?
+          </T>
+        </Row>
+        <T v="caption" muted>
+          Your answer is sent to our server and its AI provider for this one review. It is not stored.
+        </T>
+        {state.status === 'error' ? <T color={theme.danger}>{state.message}</T> : null}
+        <Button kind="secondary" label={state.status === 'loading' ? 'Reviewing…' : 'Get AI feedback'} disabled={state.status === 'loading'} onPress={run} />
+      </Card>
+    );
+  }
+  const v = state.value;
+  return (
+    <Animated.View entering={FadeInDown.duration(250)}>
+      <Card>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Tag label="AI-generated feedback" color={theme.warning} />
+          <T v="caption" muted>
+            Confidence: {v.confidence}
+          </T>
+        </Row>
+        <T v="title">{v.score}/100</T>
+        <T>{v.feedback}</T>
+        {v.strengths.length ? (
+          <View style={{ gap: 4 }}>
+            <T v="caption" muted>
+              STRENGTHS
+            </T>
+            {v.strengths.map((s) => (
+              <T key={s}>• {s}</T>
+            ))}
+          </View>
+        ) : null}
+        {v.gaps.length ? (
+          <View style={{ gap: 4 }}>
+            <T v="caption" muted>
+              TO IMPROVE
+            </T>
+            {v.gaps.map((s) => (
+              <T key={s}>• {s}</T>
+            ))}
+          </View>
+        ) : null}
+        <T v="caption" muted>
+          AI feedback can be wrong. The rubric above is the deterministic score.
+        </T>
+      </Card>
+    </Animated.View>
+  );
+}

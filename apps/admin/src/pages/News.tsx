@@ -20,13 +20,21 @@ interface Article {
 
 const TABS = ['pending', 'published', 'rejected'] as const;
 
-function ReviewCard({ a, status }: { a: Article; status: (typeof TABS)[number] }) {
+function ReviewCard({ a, status, aiEnabled }: { a: Article; status: (typeof TABS)[number]; aiEnabled: boolean }) {
   const qc = useQueryClient();
   const [summary, setSummary] = useState('');
+  const [aiDraft, setAiDraft] = useState<string | null>(null);
+  const draft = useMutation({
+    mutationFn: () => api<{ summary: string }>(`/v1/admin/news/${a.id}/ai-summary`, { method: 'POST' }),
+    onSuccess: (r) => {
+      setSummary(r.summary);
+      setAiDraft(r.summary);
+    },
+  });
   const [reason, setReason] = useState('');
   const m = useMutation({
     mutationFn: (action: 'publish' | 'reject') =>
-      api(`/v1/admin/news/${a.id}`, { method: 'PATCH', body: { action, ...(summary.trim() ? { summary: summary.trim() } : {}), ...(reason.trim() ? { reason: reason.trim() } : {}) } }),
+      api(`/v1/admin/news/${a.id}`, { method: 'PATCH', body: { action, ...(summary.trim() ? { summary: summary.trim(), aiDrafted: aiDraft !== null } : {}), ...(reason.trim() ? { reason: reason.trim() } : {}) } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['news'] }),
   });
   return (
@@ -56,6 +64,13 @@ function ReviewCard({ a, status }: { a: Article; status: (typeof TABS)[number] }
       {status === 'pending' ? (
         <div className="mt-4 space-y-2">
           <textarea className={inputCls} rows={2} placeholder="Optional editor summary after verifying the source (replaces the template text)" value={summary} onChange={(e) => setSummary(e.target.value)} />
+          {aiDraft !== null ? <p className="text-xs text-warn">AI draft: check it against the source before publishing. It will be labelled as AI-assisted.</p> : null}
+          {aiEnabled ? (
+            <Button kind="ghost" disabled={draft.isPending} onClick={() => draft.mutate()}>
+              {draft.isPending ? 'Drafting…' : 'Draft summary with AI'}
+            </Button>
+          ) : null}
+          <ErrorNote error={draft.error} />
           <input className={inputCls} placeholder="Reason (stored in the audit log)" value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className="flex gap-2">
             <Button disabled={m.isPending} onClick={() => m.mutate('publish')}>
@@ -79,6 +94,7 @@ function ReviewCard({ a, status }: { a: Article; status: (typeof TABS)[number] }
 }
 
 export function NewsPage() {
+  const ai = useQuery({ queryKey: ['ai-usage'], queryFn: () => api<{ enabled: boolean }>('/v1/admin/ai/usage'), staleTime: 60_000 });
   const [tab, setTab] = useState<(typeof TABS)[number]>('pending');
   const q = useQuery({ queryKey: ['news', tab], queryFn: () => api<{ articles: Article[] }>(`/v1/admin/news?status=${tab}`) });
   return (
@@ -98,7 +114,7 @@ export function NewsPage() {
       {q.data?.articles.length === 0 ? <Empty>Nothing here.</Empty> : null}
       <div className="space-y-4">
         {q.data?.articles.map((a) => (
-          <ReviewCard key={a.id} a={a} status={tab} />
+          <ReviewCard key={a.id} a={a} status={tab} aiEnabled={!!ai.data?.enabled} />
         ))}
       </div>
     </div>

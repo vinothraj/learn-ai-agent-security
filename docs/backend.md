@@ -100,6 +100,13 @@ recommended once real users depend on sync.
 | POST | `/v1/events` | signed in, opted in (30/min, 500 events per batch) |
 | DELETE | `/v1/me/analytics` | signed in (withdraw consent: deletes shared events) |
 | GET | `/v1/admin/analytics?days=7..90` | admin+ |
+| POST | `/v1/ai/tutor` | signed in (20/min, per-user daily cap) |
+| POST | `/v1/ai/interview-feedback` | signed in (10/min, answers never cached) |
+| POST | `/v1/admin/ai/quiz` | editor+ (drafts go to the review queue) |
+| GET | `/v1/admin/ai/suggestions` | editor+ |
+| POST | `/v1/admin/ai/suggestions/:id/review` | admin+ (four-eyes, audited) |
+| POST | `/v1/admin/news/:id/ai-summary` | admin+ (draft only, not saved) |
+| GET | `/v1/admin/ai/usage` | admin+ |
 
 Example:
 
@@ -200,3 +207,38 @@ user id. Keep the salt secret and stable; changing it disconnects old events.
 Any figure covering fewer than **5** learners is returned as `null` and shown as hidden. Days are the
 learner's local calendar day. Queries run on demand with indexes; add materialized daily rollups if the
 event table grows past a few million rows.
+
+## Optional AI
+
+AI is **off by default** and never required: with `AI_PROVIDER=none` every feature works with its
+deterministic fallback. Keys stay on the server; the app never talks to a model directly.
+
+| Variable | Meaning |
+|---|---|
+| `AI_PROVIDER` | `none` (default), `anthropic`, `openai-compatible` or `ollama` |
+| `AI_API_KEY` | provider key (Anthropic, or an OpenAI-compatible service) |
+| `AI_BASE_URL` | for `openai-compatible` (e.g. `https://api.openai.com/v1`) or `ollama` (`http://127.0.0.1:11434`) |
+| `AI_MODEL` | defaults: `claude-haiku-5-5` (Anthropic), `llama3.2` (Ollama) |
+| `AI_DAILY_TOKEN_BUDGET` | total tokens per UTC day across everyone (default 200 000) |
+| `AI_USER_DAILY_REQUESTS` | AI requests per learner per day (default 20) |
+| `AI_TIMEOUT_MS` | per call (default 20 000); one retry on 429/5xx |
+
+Then turn on the `ai` feature flag in Admin → Feature flags. `/v1/config` reports `features.ai` only
+when both are on.
+
+**Zero-cost option:** run [Ollama](https://ollama.com) on a machine you control and set
+`AI_PROVIDER=ollama`. Hosted providers (Anthropic, OpenAI) are pay-per-use; the daily budget caps spend.
+
+**What uses AI, and the fallback for each:**
+
+| Feature | With AI | Without AI |
+|---|---|---|
+| Ask the tutor (app) | Model phrases an answer from the top 3 matching lessons, with citations limited to those lessons; labelled "AI-generated" | The app answers from lesson summaries (works offline) |
+| Interview feedback | Optional second opinion, on request; answer sent once, not stored or cached | Rubric coverage score (always shown) |
+| Quiz drafting (admin) | Questions from one lesson's text → review queue; approver must differ from requester | Write questions in the content editor |
+| News summary (admin) | Draft for the reviewer; published summaries are labelled AI-assisted | Template summary or editor text |
+
+**Safety:** refusals (attacking real systems, malware, evasion) and off-topic checks run
+deterministically before any model call. Lesson text, questions, answers and article text are passed
+inside delimiters and declared as data. Output must match a JSON schema or it is discarded. Responses
+are cached for 7 days (except interview answers). Provider error messages never include response bodies.

@@ -1,7 +1,7 @@
 import { contentPack } from '@laas/content';
 import { roadmapProgress } from '@laas/shared';
 import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, MessageCircleQuestion } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { Appear, Card, ProgressBar, Row, Screen, T, Tag } from '@/components/ui';
@@ -16,6 +16,18 @@ export default function Learn() {
 
   return (
     <Screen title="Learn" subtitle="Security roadmaps first; supporting AI topics when you need them.">
+      <Card onPress={() => router.push('/tutor')} accessibilityLabel="Ask the tutor">
+        <Row>
+          <MessageCircleQuestion size={24} color={theme.accent} />
+          <View style={{ flex: 1 }}>
+            <T v="heading">Ask the tutor</T>
+            <T v="caption" muted>
+              Questions answered from these lessons, with links.
+            </T>
+          </View>
+          <ChevronRight size={20} color={theme.textMuted} />
+        </Row>
+      </Card>
       {contentPack.roadmaps.map((r, i) => {
         const p = roadmapProgress(r, completed);
         const empty = r.lessonIds.length === 0;

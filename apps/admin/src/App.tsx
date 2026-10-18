@@ -15,6 +15,7 @@ import { UsersPage } from './pages/Users';
 // The CMS pages bundle the full content pack and validator; load them only when needed.
 const ContentPage = lazy(() => import('./pages/Content').then((m) => ({ default: m.ContentPage })));
 const ContentEditorPage = lazy(() => import('./pages/ContentEditor').then((m) => ({ default: m.ContentEditorPage })));
+const AiPage = lazy(() => import('./pages/Ai').then((m) => ({ default: m.AiPage })));
 
 export interface Me {
   id: string;
@@ -27,6 +28,7 @@ const NAV: { path: string; label: string; min: Role }[] = [
   { path: '', label: 'Dashboard', min: 'admin' },
   { path: 'analytics', label: 'Engagement', min: 'admin' },
   { path: 'content', label: 'Content', min: 'editor' },
+  { path: 'ai', label: 'AI drafts', min: 'editor' },
   { path: 'news', label: 'News review', min: 'admin' },
   { path: 'sources', label: 'Sources & ingestion', min: 'admin' },
   { path: 'users', label: 'Users & roles', min: 'admin' },
@@ -81,6 +83,8 @@ export function App() {
         return <ContentEditorPage id={route[1]!} role={role} me={me.data} />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'ai':
+        return <AiPage role={role} />;
       case 'news':
         return <NewsPage />;
       case 'sources':

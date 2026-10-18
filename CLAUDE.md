@@ -40,7 +40,13 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   `analytics_events` keyed by HMAC(`ANALYTICS_SALT`, user id); `POST /v1/events`, `DELETE /v1/me/analytics`,
   `GET /v1/admin/analytics` (`engagementReport`, §16 metrics, weekly retention cohorts, MIN_COHORT 5
   suppression). Admin Engagement page. Lesson `reviewedOn` drives freshness. Leaderboard deferred (optional).
-- **Next: Phase 10.** Optional AI providers with fallback (app fully works with `AI_PROVIDER=none`).
+- **Phase 10 (optional AI): done.** `apps/api/src/ai/` provider adapter (`none`, `anthropic`, `openai-compatible`,
+  `ollama`; injectable in `buildApp({ ai })`) and `AiService` (flag, daily token budget, per-user daily cap, 7-day
+  cache, timeout + one retry, JSON schema validation, fallback reasons). Shared `tutor.ts`: BM25 lesson search,
+  domain-vocabulary on-topic gate, deterministic refusals, `lessonAnswer`. Routes: tutor, interview feedback,
+  quiz drafts → `ai_suggestions` (four-eyes review), news summary drafts (`aiDrafted` → origin `ai`), usage.
+  Mobile `/tutor` (offline lesson answers; AI when `features.ai`), opt-in AI interview feedback. Admin "AI drafts".
+- **Next: Phase 11.** Hardening: security review, accessibility audit, performance, widget + app shortcuts, coverage.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
