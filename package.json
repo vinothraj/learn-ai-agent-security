@@ -1,0 +1,21 @@
+{
+  "name": "learn-ai-agent-security",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Learn AI & Agent Security - offline-first mobile learning platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "mobile": "npm run start --workspace apps/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "validate:content": "npm run validate --workspace packages/content",
+    "check": "npm run typecheck && npm run test && npm run validate:content"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
