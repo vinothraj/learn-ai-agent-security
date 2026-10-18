@@ -37,7 +37,11 @@ export function DashboardPage() {
           <Stat label="In review" value={o?.content.inReview ?? '…'} tone={o && o.content.inReview > 0 ? 'warn' : undefined} />
         </div>
       </Card>
-      <p className="text-xs text-muted">Engagement analytics (retention, completion, drop-off) arrive in Phase 9.</p>
+      <p className="text-sm">
+        <a className="text-accent hover:underline" href="#/analytics">
+          Engagement: retention, completion and drop-off →
+        </a>
+      </p>
     </div>
   );
 }

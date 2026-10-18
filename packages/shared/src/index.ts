@@ -17,3 +17,4 @@ export * from './interview';
 export * from './sync';
 export * from './packCheck';
 export * from './notifications';
+export * from './analytics';

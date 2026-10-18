@@ -68,6 +68,8 @@ export const Lesson = z.object({
   evidence: EvidenceLevel,
   status: ReviewStatus,
   version: z.number().int().min(1),
+  /** Date a human expert last reviewed this lesson (YYYY-MM-DD). Drives the content-freshness metric. */
+  reviewedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 export type Lesson = z.infer<typeof Lesson>;
 

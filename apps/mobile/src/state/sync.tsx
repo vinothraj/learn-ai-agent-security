@@ -5,6 +5,7 @@ import type { SyncResponse } from '@laas/shared';
 
 import { resetAllProgress } from '@/db/repo';
 import { api, ApiError, cloud, cloudConfigured, devSignIn, freshSession, loadSession, requestCode, saveSession, verifyCode, type Session } from '@/sync/auth';
+import { uploadAnalytics } from '@/sync/analytics';
 import { enqueueAll, lastSyncAt as readLastSync, resetSyncState, runSync } from '@/sync/engine';
 import { useProgress } from './progress';
 import { useSettings } from './settings';
@@ -68,6 +69,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       const s = await withSession();
       const result = await runSync(db, (body) => api<SyncResponse>(s, '/v1/sync', { method: 'POST', body }));
       setLastSync(result.lastSyncAt);
+      // Opt-in usage statistics ride along with sync; failures never affect progress sync.
+      await uploadAnalytics(db, (path, init) => api(s, path, init)).catch(() => 0);
       if (result.pulled > 0) {
         await reload();
         await refresh();

@@ -3,6 +3,7 @@ import { lazy, Suspense, useState } from 'react';
 import { Button } from './components/ui';
 import { api, atLeast, auth, getSession, type Role } from './lib/api';
 import { go, useRoute } from './lib/router';
+import { AnalyticsPage } from './pages/Analytics';
 import { AuditPage } from './pages/Audit';
 import { DashboardPage } from './pages/Dashboard';
 import { LoginPage } from './pages/Login';
@@ -24,6 +25,7 @@ export interface Me {
 
 const NAV: { path: string; label: string; min: Role }[] = [
   { path: '', label: 'Dashboard', min: 'admin' },
+  { path: 'analytics', label: 'Engagement', min: 'admin' },
   { path: 'content', label: 'Content', min: 'editor' },
   { path: 'news', label: 'News review', min: 'admin' },
   { path: 'sources', label: 'Sources & ingestion', min: 'admin' },
@@ -77,6 +79,8 @@ export function App() {
         return <ContentPage role={role} />;
       case 'editor':
         return <ContentEditorPage id={route[1]!} role={role} me={me.data} />;
+      case 'analytics':
+        return <AnalyticsPage />;
       case 'news':
         return <NewsPage />;
       case 'sources':

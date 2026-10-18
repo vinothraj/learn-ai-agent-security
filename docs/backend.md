@@ -69,6 +69,7 @@ against Postgres with `TEST_DATABASE_URL=postgres://laas:laas@localhost:5432/laa
    | `DATABASE_URL` | Supabase Postgres connection string |
    | `CORS_ORIGINS` | admin panel origin(s), comma-separated |
    | `SUPER_ADMIN_EMAILS` | your email (bootstraps the first super-admin) |
+   | `ANALYTICS_SALT` | random secret (32+ chars) for pseudonymous analytics ids |
    | `PUSH` | `on` to send push notifications through Expo (default `off`) |
    | `EXPO_ACCESS_TOKEN` | optional, if "enhanced push security" is enabled in your Expo account |
 
@@ -96,6 +97,9 @@ recommended once real users depend on sync.
 | PUT | `/v1/devices` | signed in (register push token and topics) |
 | DELETE | `/v1/devices/:token` | signed in (own tokens only) |
 | POST | `/v1/notifications/:id/tapped` | signed in (records a real open) |
+| POST | `/v1/events` | signed in, opted in (30/min, 500 events per batch) |
+| DELETE | `/v1/me/analytics` | signed in (withdraw consent: deletes shared events) |
+| GET | `/v1/admin/analytics?days=7..90` | admin+ |
 
 Example:
 
@@ -166,3 +170,33 @@ duplicates. Taps open the matching screen and are logged on the device (`notific
 **Setup:** run `eas init` in `apps/mobile` (adds `extra.eas.projectId` to the app config), add an
 FCM V1 service-account key with `eas credentials` (Android), build with EAS, and set `PUSH=on` on the
 API. Expo Go cannot receive remote push; local reminders work everywhere except the web preview.
+
+## Engagement analytics
+
+**Opt-in only.** A learner turns on "Share anonymous usage statistics" in Settings (signed-in users
+only; guests keep statistics on the device). While it is on, SQLite triggers queue structured events
+(`packages/shared/src/analytics.ts`): daily active seconds, lesson started/completed, first quiz
+score, lab started/result, notification taps. There is no free text, no answers and no device
+fingerprint. Events upload with sync, idempotently (one key per event). Turning it off clears the queue
+and deletes everything shared (`DELETE /v1/me/analytics`). Account deletion and data export include them.
+
+**Pseudonymous storage:** events are stored under `HMAC-SHA256(ANALYTICS_SALT, user id)`, never the
+user id. Keep the salt secret and stable; changing it disconnects old events.
+
+**Metrics (MASTER_PROMPT §16), computed in SQL by `apps/api/src/analytics.ts`:**
+
+| Metric | Definition used |
+|---|---|
+| DAU / WAU / MAU | Distinct learners with active time on the day / last 7 / last 30 days |
+| Learning minutes | Sum of active seconds ÷ 60 (also per active learner) |
+| Lesson completion | Lessons completed within 7 days of starting ÷ lessons started |
+| Quiz average | Mean first-attempt score |
+| Lab completion | Labs that reached a pass/fail result ÷ labs started |
+| D1 / D7 / D30 retention | Weekly cohorts by first active day; % active exactly N days after their first day (only learners for whom day N has passed) |
+| Roadmap drop-off | Of learners who started a roadmap's first lesson, % who started each lesson |
+| Push tap rate | Taps ÷ pushes accepted by Expo |
+| Content freshness | Lessons with `reviewedOn` in the last 180 days; ingestion success per source |
+
+Any figure covering fewer than **5** learners is returned as `null` and shown as hidden. Days are the
+learner's local calendar day. Queries run on demand with indexes; add materialized daily rollups if the
+event table grows past a few million rows.

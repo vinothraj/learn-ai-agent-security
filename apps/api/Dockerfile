@@ -4,9 +4,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
+COPY packages/content/package.json packages/content/
 COPY apps/api/package.json apps/api/
 RUN npm ci --workspace apps/api --include-workspace-root=false --omit=dev
 COPY packages/shared packages/shared
+COPY packages/content packages/content
 COPY apps/api apps/api
 USER node
 EXPOSE 4000

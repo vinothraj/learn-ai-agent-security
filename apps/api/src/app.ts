@@ -11,6 +11,7 @@ import { HttpError } from './http';
 import { openApiSpec } from './openapi';
 import { accountRoutes } from './routes/account';
 import { adminRoutes } from './routes/admin';
+import { analyticsRoutes } from './routes/analytics';
 import { contentRoutes } from './routes/content';
 import { deviceRoutes } from './routes/devices';
 import { newsRoutes } from './routes/news';
@@ -93,5 +94,6 @@ export async function buildApp({ config, db, verifier, push }: { config: Config;
   await app.register(newsRoutes, { db, push: sender });
   await app.register(contentRoutes, { db, push: sender });
   await app.register(deviceRoutes, { db });
+  await app.register(analyticsRoutes, { db, config });
   return app;
 }

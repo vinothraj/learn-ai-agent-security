@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Config } from '../config';
 import type { Db } from '../db';
 import { parse, requireAuth } from '../http';
+import { analyticsId } from '../analytics';
 import { audit, exportUserData, pseudonym } from '../services';
 
 export const UpdateMe = z.strictObject({ displayName: z.string().trim().max(40) });
@@ -35,7 +36,11 @@ export async function accountRoutes(app: FastifyInstance, { db, config }: { db: 
   app.get('/v1/me/export', async (req, reply) => {
     const auth = requireAuth(req);
     reply.header('Content-Disposition', 'attachment; filename="learn-ai-security-export.json"');
-    return exportUserData(db, auth.id);
+    const data = await exportUserData(db, auth.id);
+    const analytics = (
+      await db.query('SELECT key, type, subject, value, day::text AS day FROM analytics_events WHERE user_hash = $1 ORDER BY day, key', [analyticsId(config.ANALYTICS_SALT, auth.id)])
+    ).rows;
+    return { ...data, analytics };
   });
 
   /** Account deletion (Google Play requirement): removes the profile and all synced progress. */
@@ -43,7 +48,8 @@ export async function accountRoutes(app: FastifyInstance, { db, config }: { db: 
     const auth = requireAuth(req);
     await db.transaction(async (tx) => {
       await audit(tx, pseudonym(auth.id), 'account.deleted', { type: 'user', id: pseudonym(auth.id) });
-      await tx.query('DELETE FROM users WHERE id = $1', [auth.id]); // cascades to sync_records
+      await tx.query('DELETE FROM users WHERE id = $1', [auth.id]); // cascades to sync_records, devices, notifications
+      await tx.query('DELETE FROM analytics_events WHERE user_hash = $1', [analyticsId(config.ANALYTICS_SALT, auth.id)]);
     });
     let authAccountDeleted = false;
     try {

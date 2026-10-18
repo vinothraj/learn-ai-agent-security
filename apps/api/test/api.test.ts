@@ -199,9 +199,9 @@ describe('configuration safety', () => {
   it('refuses unsafe production settings', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/AUTH_MODE must be "supabase"/);
     expect(() => loadConfig({ NODE_ENV: 'production', AUTH_MODE: 'supabase', SUPABASE_URL: 'https://x.supabase.co' })).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadConfig({ NODE_ENV: 'production', AUTH_MODE: 'supabase', SUPABASE_URL: 'https://x.supabase.co', DATABASE_URL: 'postgres://x', CORS_ORIGINS: 'https://app.example' }),
-    ).not.toThrow();
+    const prod = { NODE_ENV: 'production', AUTH_MODE: 'supabase', SUPABASE_URL: 'https://x.supabase.co', DATABASE_URL: 'postgres://x', CORS_ORIGINS: 'https://app.example' };
+    expect(() => loadConfig(prod)).toThrow(/ANALYTICS_SALT/);
+    expect(() => loadConfig({ ...prod, ANALYTICS_SALT: 'a-real-random-secret-of-at-least-32-chars' })).not.toThrow();
   });
 
   it('does not expose the dev token endpoint in supabase mode', async () => {

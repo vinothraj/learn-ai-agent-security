@@ -2,10 +2,12 @@ import { contentPack } from '@laas/content';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { ChevronLeft } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 
 import { Button, Card, Chip, Row, Screen, SectionTitle, T } from '@/components/ui';
 import { resetAllProgress } from '@/db/repo';
+import { isOptedIn, setOptIn } from '@/sync/analytics';
 import { ensurePermission, formatTime, notificationsSupported, pushAvailability } from '@/lib/notifications';
 import { useProgress } from '@/state/progress';
 import { useSync } from '@/state/sync';
@@ -73,6 +75,18 @@ export default function SettingsScreen() {
   const set = (patch: Partial<Settings>) => update(patch);
 
   const push = pushAvailability();
+  const [shareStats, setShareStats] = useState(false);
+  useEffect(() => {
+    isOptedIn(db).then(setShareStats);
+  }, [db]);
+  const toggleStats = async (on: boolean) => {
+    setShareStats(on);
+    try {
+      await setOptIn(db, on, sync.session ? sync.call : null);
+    } catch {
+      if (!on) Alert.alert('Saved on this device', 'Sharing is off. We could not reach the server to delete shared statistics; try again when online.');
+    }
+  };
   /** Turning a notification on asks for permission first; the scheduler re-plans from settings. */
   const enable = async (patch: Partial<Settings>) => {
     const turningOn = Object.entries(patch).some(([k, v]) => k.endsWith('Enabled') || k.endsWith('Push') ? v === true : false);
@@ -267,8 +281,20 @@ export default function SettingsScreen() {
         </T>
       </Card>
       <Card>
+        <Toggle
+          label="Share anonymous usage statistics"
+          detail={
+            sync.session
+              ? 'Helps improve lessons: study minutes per day and which lessons and labs you start and finish. No answers or text, under a pseudonymous id. Turning it off deletes what was shared.'
+              : 'Available when signed in. Until then, statistics stay on this device.'
+          }
+          value={shareStats && !!sync.session}
+          onChange={(v) => (sync.session ? toggleStats(v) : undefined)}
+        />
+      </Card>
+      <Card>
         <T>
-          Progress is stored on this device{sync.session ? ' and synced to your account' : ''}. No ads and no third-party analytics.
+          Progress is stored on this device{sync.session ? ' and synced to your account' : ''}. No ads and no third-party analytics or trackers.
           Lesson content is AI-assisted draft material pending expert review.
         </T>
         <Button kind="danger" label="Reset all progress" onPress={confirmReset} />

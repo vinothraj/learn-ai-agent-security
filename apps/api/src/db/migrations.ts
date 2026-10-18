@@ -214,6 +214,25 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
         ON CONFLICT (key) DO NOTHING;
     `,
   },
+  {
+    id: '005_analytics',
+    sql: `
+      -- Opt-in engagement events keyed by a pseudonymous id (HMAC of the user id), never the user id.
+      CREATE TABLE analytics_events (
+        user_hash text NOT NULL,
+        key text NOT NULL,
+        type text NOT NULL,
+        subject text NOT NULL DEFAULT '',
+        value integer,
+        day date NOT NULL,
+        received_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_hash, key)
+      );
+      CREATE INDEX idx_analytics_type_day ON analytics_events(type, day);
+      INSERT INTO feature_flags (key, enabled, description) VALUES ('analytics', true, 'Opt-in aggregate engagement analytics')
+        ON CONFLICT (key) DO NOTHING;
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

@@ -35,7 +35,12 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   `notification_log`). API: `devices`/`notifications` tables (004), Expo push sender (injectable),
   topics `advisories` (high-impact news on publish) and `content` (on content publish), dedupe, daily caps,
   `push` flag, unregistered tokens removed.
-- **Next: Phase 9.** Aggregate engagement analytics and admin dashboards (MASTER_PROMPT §16).
+- **Phase 9 (analytics): done.** Opt-in, signed-in only. Mobile v7 `analytics_queue` filled by SQLite triggers
+  gated on kv `analytics_opt_in`, backfilled on opt-in, uploaded after sync (`sync/analytics.ts`). API 005
+  `analytics_events` keyed by HMAC(`ANALYTICS_SALT`, user id); `POST /v1/events`, `DELETE /v1/me/analytics`,
+  `GET /v1/admin/analytics` (`engagementReport`, §16 metrics, weekly retention cohorts, MIN_COHORT 5
+  suppression). Admin Engagement page. Lesson `reviewedOn` drives freshness. Leaderboard deferred (optional).
+- **Next: Phase 10.** Optional AI providers with fallback (app fully works with `AI_PROVIDER=none`).
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout

@@ -55,6 +55,51 @@ export const SYNC_TRIGGERS = [
   outboxTrigger('pf', 'kv', 'UPDATE', 'profile', "'profile'", "NEW.key = 'settings'"),
 ].join('\n');
 
+const OPTED_IN = "EXISTS (SELECT 1 FROM kv WHERE key = 'analytics_opt_in' AND value = '1')";
+const LOCAL_DAY = (ms: string) => `date(${ms} / 1000, 'unixepoch', 'localtime')`;
+const ACTIVE_DAY = `INSERT INTO analytics_queue (key, type, subject, value, day)
+      VALUES ('ad:' || NEW.day, 'active_day', '', (SELECT SUM(active_seconds) FROM study_sessions WHERE day = NEW.day), NEW.day)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value;`;
+const COMPLETED = (when: string) => `INSERT OR IGNORE INTO analytics_queue (key, type, subject, value, day)
+      SELECT 'lc:' || NEW.lesson_id, 'lesson_completed', NEW.lesson_id, NULL, COALESCE(NEW.completed_day, ${LOCAL_DAY('NEW.updated_at')}) WHERE ${when}
+      UNION ALL
+      SELECT 'qf:' || NEW.lesson_id, 'quiz_first_attempt', NEW.lesson_id, NEW.best_score, COALESCE(NEW.completed_day, ${LOCAL_DAY('NEW.updated_at')})
+      WHERE ${when} AND NEW.best_score IS NOT NULL;`;
+
+/** Structured events only (ids and numbers, never free text); see packages/shared/src/analytics.ts. */
+export const ANALYTICS_TRIGGERS = `
+  CREATE TRIGGER IF NOT EXISTS trg_an_ss_insert AFTER INSERT ON study_sessions WHEN ${OPTED_IN} AND NEW.active_seconds > 0
+  BEGIN
+    ${ACTIVE_DAY}
+  END;
+  CREATE TRIGGER IF NOT EXISTS trg_an_ss_update AFTER UPDATE ON study_sessions WHEN ${OPTED_IN} AND NEW.active_seconds > 0
+  BEGIN
+    ${ACTIVE_DAY}
+  END;
+  CREATE TRIGGER IF NOT EXISTS trg_an_lab_start AFTER INSERT ON study_sessions WHEN ${OPTED_IN} AND NEW.activity = 'lab' AND NEW.content_id IS NOT NULL
+  BEGIN
+    INSERT OR IGNORE INTO analytics_queue (key, type, subject, value, day) VALUES ('lb:' || NEW.content_id, 'lab_started', NEW.content_id, NULL, NEW.day);
+  END;
+  CREATE TRIGGER IF NOT EXISTS trg_an_lp_insert AFTER INSERT ON lesson_progress WHEN ${OPTED_IN}
+  BEGIN
+    INSERT OR IGNORE INTO analytics_queue (key, type, subject, value, day) VALUES ('ls:' || NEW.lesson_id, 'lesson_started', NEW.lesson_id, NULL, ${LOCAL_DAY('NEW.started_at')});
+    ${COMPLETED("NEW.status = 'completed'")}
+  END;
+  CREATE TRIGGER IF NOT EXISTS trg_an_lp_complete AFTER UPDATE ON lesson_progress WHEN ${OPTED_IN} AND NEW.status = 'completed' AND OLD.status <> 'completed'
+  BEGIN
+    ${COMPLETED('1')}
+  END;
+  CREATE TRIGGER IF NOT EXISTS trg_an_lab_result AFTER INSERT ON lab_attempts WHEN ${OPTED_IN}
+  BEGIN
+    INSERT OR IGNORE INTO analytics_queue (key, type, subject, value, day) VALUES ('lr:' || NEW.lab_id, 'lab_result', NEW.lab_id, NEW.passed, NEW.day);
+  END;
+  CREATE TRIGGER IF NOT EXISTS trg_an_notif AFTER INSERT ON notification_log WHEN ${OPTED_IN}
+  BEGIN
+    INSERT OR IGNORE INTO analytics_queue (key, type, subject, value, day)
+      VALUES ('nt:' || NEW.id, 'notification_tap', CASE WHEN NEW.type IN ('reminder', 'recap', 'weekly') THEN NEW.type ELSE 'push' END, NULL, ${LOCAL_DAY('NEW.at')});
+  END;
+`;
+
 /**
  * Ordered, append-only migrations. Never edit a released migration; add a new one.
  * PRAGMA user_version tracks how many have been applied.
@@ -245,6 +290,17 @@ const MIGRATIONS: string[] = [
     at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_notification_log_at ON notification_log(at);
+  `,
+  // v7 (Phase 9): opt-in analytics queue, filled by triggers only while the learner has opted in.
+  `
+  CREATE TABLE IF NOT EXISTS analytics_queue (
+    key TEXT PRIMARY KEY NOT NULL,
+    type TEXT NOT NULL,
+    subject TEXT NOT NULL DEFAULT '',
+    value INTEGER,
+    day TEXT NOT NULL
+  );
+  ${ANALYTICS_TRIGGERS}
   `,
 ];
 

@@ -27,6 +27,8 @@ const EnvSchema = z.object({
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).default(300),
   /** Background feed ingestion. Off in tests; can be turned off per instance. */
   NEWS_INGESTION: z.enum(['on', 'off']).default('on'),
+  /** Secret for pseudonymous analytics ids (HMAC of the user id). Required in production. */
+  ANALYTICS_SALT: z.string().min(32).default('dev-only-analytics-salt-0123456789abcdef'),
   /** Server push via Expo. Off by default outside production; tests inject a fake sender. */
   PUSH: z.enum(['on', 'off']).default('off'),
   /** Optional Expo access token (enhanced push security). Server-side only. */
@@ -44,6 +46,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     if (c.AUTH_MODE !== 'supabase') problems.push('AUTH_MODE must be "supabase" in production');
     if (!c.SUPABASE_URL) problems.push('SUPABASE_URL is required in production');
     if (!c.DATABASE_URL) problems.push('DATABASE_URL is required in production (embedded PGlite is for development only)');
+    if (c.ANALYTICS_SALT.startsWith('dev-only')) problems.push('ANALYTICS_SALT must be set to a random secret in production');
     if (c.CORS_ORIGINS.length === 0) problems.push('CORS_ORIGINS must list allowed web origins in production');
     if (problems.length) throw new Error(`Unsafe production configuration:\n- ${problems.join('\n- ')}`);
   }

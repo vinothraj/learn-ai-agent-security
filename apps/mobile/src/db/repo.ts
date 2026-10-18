@@ -367,6 +367,7 @@ export async function resetAllProgress(db: SQLiteDatabase) {
     DELETE FROM mock_sessions;
     DELETE FROM interview_bookmarks;
     DELETE FROM notification_log;
+    DELETE FROM analytics_queue;
   `);
 }
 
