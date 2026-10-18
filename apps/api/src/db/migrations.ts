@@ -153,6 +153,31 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       UPDATE feature_flags SET enabled = true WHERE key = 'news';
     `,
   },
+  {
+    id: '003_content_versions',
+    sql: `
+      -- Versioned content packs: draft -> in_review -> published (one at a time) -> archived.
+      CREATE TABLE content_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        label text NOT NULL CHECK (length(label) BETWEEN 1 AND 40),
+        pack jsonb NOT NULL,
+        checksum text NOT NULL,
+        issues integer NOT NULL DEFAULT 0,
+        status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'in_review', 'published', 'archived', 'rejected')),
+        notes text NOT NULL DEFAULT '',
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        submitted_at timestamptz,
+        reviewed_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        reviewed_at timestamptz,
+        review_note text,
+        published_at timestamptz
+      );
+      CREATE UNIQUE INDEX ux_content_one_published ON content_versions(status) WHERE status = 'published';
+      CREATE INDEX idx_content_created ON content_versions(created_at DESC);
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

@@ -26,13 +26,17 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   HTTPS-only bounded fetches, XXE-safe parsing, domain allow-lists, whole-word AI relevance filter,
   canonical-URL + SimHash dedupe, rule-based classification, auto-publish only for official non-high-impact
   items, admin review queue (audited), public `/v1/news`, News tab with offline cache.
-- **Next: Phase 7.** Admin web panel (apps/admin).
+- **Phase 7 (admin panel & CMS): done.** `apps/admin` (React + Vite + Tailwind + TanStack Query): dashboard,
+  content CMS with live `packIssues` validation and four-eyes publishing, news review, sources and runs,
+  users and roles, audit log, flags. API content versions; app applies published packs over the air.
+- **Next: Phase 8.** Notifications: daily recap, weekly report, push for advisories, caps and dedupe.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
 
 ```
 apps/mobile        Expo SDK 58 app (Expo Router, routes in src/app)
+apps/admin         Staff web panel (hash router; CMS pages lazy-loaded)
 apps/api           Fastify API, SQL migrations in src/db/migrations.ts, tests use in-memory PGlite
 packages/shared    Pure TS: zod schemas, dates, XP, streaks, stats, insights, tracking, recommender (+ vitest)
 packages/content   Seed content pack (roadmaps, lessons, threats) + schema/integrity tests
@@ -59,7 +63,8 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
 - Never create or edit `android/` or `ios/` by hand. Configure through `app.json` and config plugins (CNG).
 - Stay Expo Go compatible until a native module truly requires a dev build.
 - Pure logic goes in `packages/shared` with vitest tests; the app only wires UI to it.
-- Content is TypeScript validated by zod (`ContentPack`). New lessons must pass `npm run validate:content`.
+- Content is TypeScript validated by zod (`ContentPack`) plus `packIssues()` (shared/packCheck.ts), the single
+  integrity gate used by tests, the API publish step and the app before applying an OTA pack.
   Seed content is AI-assisted and stays `status: 'needs_review'` until a human reviews it.
 - Local DB: expo-sqlite with append-only migrations in `src/db/migrations.ts`; never edit a released one.
 - XP is idempotent via `xp_ledger UNIQUE(reason, ref)`; `awardXp` returns what was actually granted.

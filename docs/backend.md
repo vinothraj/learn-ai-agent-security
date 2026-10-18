@@ -113,3 +113,30 @@ pg_restore --clean --dbname "$RESTORE_URL" laas-YYYY-MM-DD.dump   # test restore
 If outbound internet access goes through a proxy, set `HTTPS_PROXY` (and optionally `NO_PROXY`)
 for the API process. All server-side requests (news feeds, Supabase admin API) then use it.
 Without the variable, the API connects directly.
+
+## Admin panel (`apps/admin`)
+
+React + Vite web app for staff. Run locally with `npm run admin` (port 5173) next to `npm run api`.
+Configure with `apps/admin/.env.local` (`VITE_API_URL`, `VITE_AUTH_MODE`, `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_ANON_KEY`). Build static files with `npm run build --workspace apps/admin` and host them
+on any static host (add that origin to the API's `CORS_ORIGINS`).
+
+| Area | Who | Notes |
+|---|---|---|
+| Dashboard | admin+ | Aggregates only |
+| Content | editor+ | Draft, edit lessons/flashcards/quizzes, live validation, submit |
+| Content review / publish | admin+ | Four-eyes: you cannot publish your own version (super-admin can) |
+| News review, sources, ingestion runs | admin+ | Verify high-impact claims before publishing |
+| Users & roles | admin+ | Listing is audited; admin roles need super-admin; CSV export super-admin |
+| Audit log | super-admin | Append-only |
+| Feature flags | admin+ view, super-admin change | Apps read flags from `/v1/config` |
+
+Staff sign in with Supabase email codes (`create_user: false`, so accounts must already exist). Grant
+roles from **Users & roles**, or bootstrap the first super-admin with `SUPER_ADMIN_EMAILS`.
+
+## Content publishing (over the air)
+
+Published packs are served at `/v1/content/manifest` and `/v1/content/packs/:id`. The app downloads a
+newer pack in the background, checks its SHA-256 checksum and runs the same `packIssues()` validation,
+and applies it on the **next launch**. Packs that are invalid, tampered with or not newer than the
+bundled content are ignored. Set a higher pack version (e.g. `2026.11.1`) before publishing.

@@ -11,12 +11,14 @@ import { HttpError } from './http';
 import { openApiSpec } from './openapi';
 import { accountRoutes } from './routes/account';
 import { adminRoutes } from './routes/admin';
+import { contentRoutes } from './routes/content';
 import { newsRoutes } from './routes/news';
 import { syncRoutes } from './routes/sync';
 import { systemRoutes } from './routes/system';
 import { upsertUser } from './services';
 
-const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/v1/news', '/dev/token']);
+const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/v1/news', '/v1/content/manifest', '/dev/token']);
+const PUBLIC_PREFIXES = ['/docs', '/v1/content/packs/'];
 
 export async function buildApp({ config, db, verifier }: { config: Config; db: Db; verifier?: Verifier }): Promise<FastifyInstance> {
   const verify = verifier ?? createVerifier(config);
@@ -42,7 +44,7 @@ export async function buildApp({ config, db, verifier }: { config: Config; db: D
       const dev = config.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
       cb(null, dev || config.CORS_ORIGINS.includes(origin));
     },
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Authorization', 'Content-Type'],
     maxAge: 600,
   });
@@ -57,7 +59,7 @@ export async function buildApp({ config, db, verifier }: { config: Config; db: D
   // Authentication: every non-public route needs a valid bearer token.
   app.addHook('onRequest', async (req) => {
     const path = req.url.split('?')[0]!;
-    if (PUBLIC_PATHS.has(path) || path.startsWith('/docs') || req.method === 'OPTIONS') return;
+    if (PUBLIC_PATHS.has(path) || PUBLIC_PREFIXES.some((p) => path.startsWith(p)) || req.method === 'OPTIONS') return;
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) throw new HttpError(401, 'Authentication required');
     let identity;
@@ -85,5 +87,6 @@ export async function buildApp({ config, db, verifier }: { config: Config; db: D
   await app.register(syncRoutes, { db });
   await app.register(adminRoutes, { db });
   await app.register(newsRoutes, { db });
+  await app.register(contentRoutes, { db });
   return app;
 }

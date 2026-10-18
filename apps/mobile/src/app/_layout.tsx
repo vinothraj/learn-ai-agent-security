@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { migrate } from '@/db/migrations';
+import { ContentUpdates } from '@/state/contentUpdates';
 import { ProgressProvider } from '@/state/progress';
 import { SettingsProvider } from '@/state/settings';
 import { NewsProvider } from '@/state/news';
@@ -57,19 +58,21 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SQLiteProvider databaseName="learn-ai-security.db" onInit={migrate}>
-          <SettingsProvider>
-            <ThemeProvider>
-              <ProgressProvider>
-                <SyncProvider>
-                  <NewsProvider>
-                    <TrackerProvider>
-                      <AppStack />
-                    </TrackerProvider>
-                  </NewsProvider>
-                </SyncProvider>
-              </ProgressProvider>
-            </ThemeProvider>
-          </SettingsProvider>
+          <ContentUpdates>
+            <SettingsProvider>
+              <ThemeProvider>
+                <ProgressProvider>
+                  <SyncProvider>
+                    <NewsProvider>
+                      <TrackerProvider>
+                        <AppStack />
+                      </TrackerProvider>
+                    </NewsProvider>
+                  </SyncProvider>
+                </ProgressProvider>
+              </ThemeProvider>
+            </SettingsProvider>
+          </ContentUpdates>
         </SQLiteProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

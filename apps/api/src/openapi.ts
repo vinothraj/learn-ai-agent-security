@@ -60,6 +60,23 @@ export const openApiSpec = {
     },
     '/v1/admin/news-sources/{id}/run': { post: { summary: 'Ingest a source now (admin)', security: bearer, responses: ok('Run summary') } },
     '/v1/admin/ingestion-runs': { get: { summary: 'Recent ingestion runs and failures (admin)', security: bearer, responses: ok('Runs') } },
+    '/v1/content/manifest': { get: { summary: 'Currently published content pack (public)', responses: ok('Manifest') } },
+    '/v1/content/packs/{id}': { get: { summary: 'Download a published content pack (public, immutable)', responses: ok('Pack') } },
+    '/v1/admin/content': {
+      get: { summary: 'List content versions (editor+)', security: bearer, responses: ok('Versions') },
+      post: { summary: 'Create a draft version from a pack (editor+, validated)', security: bearer, responses: { 201: { description: 'Created' } } },
+    },
+    '/v1/admin/content/{id}': {
+      get: { summary: 'Version with pack and validation issues (editor+)', security: bearer, responses: ok('Version') },
+      put: { summary: 'Edit a draft (editor+)', security: bearer, responses: ok('Updated') },
+    },
+    '/v1/admin/content/{id}/submit': { post: { summary: 'Submit a valid draft for review (editor+)', security: bearer, responses: ok('In review') } },
+    '/v1/admin/content/{id}/publish': { post: { summary: 'Publish (admin+, four-eyes)', security: bearer, responses: ok('Published') } },
+    '/v1/admin/content/{id}/reject': { post: { summary: 'Reject with a note (admin+)', security: bearer, responses: ok('Rejected') } },
+    '/v1/admin/overview': { get: { summary: 'Dashboard aggregates (admin)', security: bearer, responses: ok('Overview') } },
+    '/v1/admin/flags': { get: { summary: 'Feature flags (admin)', security: bearer, responses: ok('Flags') } },
+    '/v1/admin/flags/{key}': { patch: { summary: 'Toggle a flag (super-admin, audited)', security: bearer, responses: ok('Changed') } },
+    '/v1/admin/users/export.csv': { get: { summary: 'User directory CSV (super-admin, audited)', security: bearer, responses: ok('CSV') } },
     '/v1/admin/audit': { get: { summary: 'Audit log (super-admin)', security: bearer, responses: ok('Entries') } },
   },
 };

@@ -5,6 +5,13 @@ import type { Db } from '../db';
 import { HttpError, parse, requireAuth, requireRole } from '../http';
 import { audit, type UserRow } from '../services';
 
+/** CSV cell with quoting, and a leading quote on =,+,-,@ so spreadsheets never evaluate it as a formula. */
+export function csvCell(v: unknown): string {
+  let s = v === null || v === undefined ? '' : v instanceof Date ? v.toISOString() : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 const Page = z.object({ limit: z.coerce.number().int().min(1).max(100).default(50), offset: z.coerce.number().int().min(0).default(0) });
 const RoleChange = z.strictObject({ role: z.enum(ROLES) });
 const IdParam = z.object({ id: z.uuid() });
@@ -55,6 +62,58 @@ export async function adminRoutes(app: FastifyInstance, { db }: { db: Db }) {
       await audit(tx, auth.id, 'role.changed', { type: 'user', id }, { from: target.role, to: role });
     });
     return { id, role };
+  });
+
+  /** One call for the admin dashboard: aggregate counts only. */
+  app.get('/v1/admin/overview', { preHandler: requireRole('admin') }, async () => {
+    const one = async <T>(sql: string) => (await db.query<T>(sql)).rows[0]!;
+    const users = await one<{ total: unknown; active7: unknown; new7: unknown }>(
+      `SELECT count(*) AS total, count(*) FILTER (WHERE last_seen_at > now() - interval '7 days') AS active7,
+              count(*) FILTER (WHERE created_at > now() - interval '7 days') AS new7 FROM users`,
+    );
+    const news = await one<{ pending: unknown; published7: unknown }>(
+      `SELECT count(*) FILTER (WHERE review_status = 'pending') AS pending,
+              count(*) FILTER (WHERE review_status = 'published' AND created_at > now() - interval '7 days') AS published7 FROM news_articles`,
+    );
+    const sources = await one<{ failing: unknown; enabled: unknown; last_run: string | null }>(
+      `SELECT count(*) FILTER (WHERE enabled AND last_status = 'error') AS failing, count(*) FILTER (WHERE enabled) AS enabled,
+              (SELECT max(started_at) FROM ingestion_runs) AS last_run FROM news_sources`,
+    );
+    const content = await one<{ published: string | null; drafts: unknown; review: unknown }>(
+      `SELECT (SELECT label FROM content_versions WHERE status = 'published') AS published,
+              count(*) FILTER (WHERE status = 'draft') AS drafts, count(*) FILTER (WHERE status = 'in_review') AS review FROM content_versions`,
+    );
+    return {
+      users: { total: Number(users.total), activeLast7Days: Number(users.active7), newLast7Days: Number(users.new7) },
+      news: { pendingReview: Number(news.pending), publishedLast7Days: Number(news.published7) },
+      ingestion: { failingSources: Number(sources.failing), enabledSources: Number(sources.enabled), lastRunAt: sources.last_run },
+      content: { publishedLabel: content.published, drafts: Number(content.drafts), inReview: Number(content.review) },
+    };
+  });
+
+  app.get('/v1/admin/flags', { preHandler: requireRole('admin') }, async () => ({
+    flags: (await db.query('SELECT key, enabled, description FROM feature_flags ORDER BY key')).rows,
+  }));
+
+  app.patch('/v1/admin/flags/:key', { preHandler: requireRole('super_admin') }, async (req) => {
+    const auth = requireAuth(req);
+    const { key } = parse(z.object({ key: z.string().regex(/^[a-z_]{2,40}$/) }), req.params);
+    const { enabled } = parse(z.strictObject({ enabled: z.boolean() }), req.body);
+    const { rows } = await db.query<{ key: string }>('UPDATE feature_flags SET enabled = $2 WHERE key = $1 RETURNING key', [key, enabled]);
+    if (!rows.length) throw new HttpError(404, 'Unknown flag');
+    await audit(db, auth.id, 'flag.changed', { type: 'flag', id: key }, { enabled });
+    return { key, enabled };
+  });
+
+  /** CSV export of the user directory (super-admin, audited). Cells are neutralised against formula injection. */
+  app.get('/v1/admin/users/export.csv', { preHandler: requireRole('super_admin') }, async (req, reply) => {
+    const auth = requireAuth(req);
+    const { rows } = await db.query<UserRow>('SELECT id, email, display_name, role, created_at, last_seen_at FROM users ORDER BY created_at');
+    await audit(db, auth.id, 'users.exported', undefined, { count: rows.length });
+    reply.header('Content-Type', 'text/csv; charset=utf-8');
+    reply.header('Content-Disposition', 'attachment; filename="users.csv"');
+    const header = ['id', 'email', 'display_name', 'role', 'created_at', 'last_seen_at'];
+    return [header.join(','), ...rows.map((r) => header.map((h) => csvCell((r as unknown as Record<string, unknown>)[h])).join(','))].join('\r\n');
   });
 
   app.get('/v1/admin/audit', { preHandler: requireRole('super_admin') }, async (req) => {

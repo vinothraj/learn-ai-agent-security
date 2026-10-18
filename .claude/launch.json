@@ -26,6 +26,17 @@
       "env": {
         "PGLITE_DIR": "memory"
       }
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5173"
+      ],
+      "cwd": "apps/admin",
+      "port": 5173
     }
   ]
 }
