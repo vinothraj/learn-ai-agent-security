@@ -16,6 +16,8 @@ export interface Settings {
   reminderEnabled: boolean;
   reminderHour: number;
   reminderMinute: number;
+  /** Interview prep target role id. */
+  targetRole: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderEnabled: false,
   reminderHour: 20,
   reminderMinute: 0,
+  targetRole: 'ai-security-engineer',
 };
 
 interface SettingsCtx {

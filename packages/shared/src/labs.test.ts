@@ -124,6 +124,7 @@ describe('labs engine', () => {
     const base = {
       lessonsCompleted: 0, roadmapsCompleted: 0, longestStreak: 0, perfectLessons: 0, cardsReviewed: 0,
       dailyChallenges: 0, distinctGamesPlayed: 0, totalGames: 7, totalMinutes: 0, totalLabs: 10,
+      mocksCompleted: 0, bestMockScore: 0,
     };
     const b = new Map(computeBadges({ ...base, labsPassed: 1 }).map((x) => [x.id, x]));
     expect(b.get('first-lab')!.earned).toBe(true);

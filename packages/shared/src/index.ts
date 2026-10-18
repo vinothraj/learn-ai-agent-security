@@ -13,3 +13,4 @@ export * from './badges';
 export * from './labs';
 export * from './pack';
 export * from './labReport';
+export * from './interview';

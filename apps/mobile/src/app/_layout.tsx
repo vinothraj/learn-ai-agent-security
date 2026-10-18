@@ -39,7 +39,9 @@ function AppStack() {
         <Stack.Screen name="lab/[id]" options={{ animation: animate ? 'slide_from_bottom' : 'none' }} />
         <Stack.Screen name="labs" />
         <Stack.Screen name="roadmap/[id]" />
-        <Stack.Screen name="interview" />
+        <Stack.Screen name="interview/index" />
+        <Stack.Screen name="interview/q/[id]" />
+        <Stack.Screen name="interview/mock" options={{ animation: animate ? 'slide_from_bottom' : 'none', gestureEnabled: false }} />
         <Stack.Screen name="share" />
         <Stack.Screen name="settings" />
       </Stack>

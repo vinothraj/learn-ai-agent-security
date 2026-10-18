@@ -185,6 +185,8 @@ describe('badges and shuffles', () => {
       totalMinutes: 30,
       labsPassed: 0,
       totalLabs: 10,
+      mocksCompleted: 0,
+      bestMockScore: 0,
     });
     const byId = new Map(b.map((x) => [x.id, x]));
     expect(byId.get('first-lesson')!.earned).toBe(true);

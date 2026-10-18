@@ -72,7 +72,7 @@ export const genaiLessons: Lesson[] = [
       id: 'b-pi-iq',
       question: 'A product team says their system prompt prevents prompt injection. How do you respond?',
       modelAnswer:
-        'I would explain that system prompts are guidance, not enforcement: instructions and user data share a channel, so injection cannot be fully prevented by wording. I would focus on reducing impact: keep secrets and other users\' data out of context, give the model least-privilege tools, validate outputs, add monitoring and classifiers as layers, and require human approval for high-impact actions. Then I would show it with a quick red-team test.',
+        'I would explain that system prompts are guidance, not enforcement: instructions and user data share a channel, so there is no complete fix through wording alone. I would apply defense in depth focused on reducing impact: keep secrets and other users\' data out of context, give the model least-privilege tools, validate outputs, add monitoring and classifiers as layers, and require human approval for high-impact actions. Then I would show it with a quick red-team test.',
       keyConcepts: ['system prompt is not enforcement', 'no complete fix', 'defense in depth', 'least privilege', 'output validation', 'human approval', 'testing'],
       evidence: 'established',
     },

@@ -32,6 +32,11 @@ import {
   loadDailyStats,
   loadEvidence,
   loadLabBests,
+  loadBookmarks,
+  loadMocks,
+  loadQuestionStats,
+  type MockSummary,
+  type QuestionStat,
   loadSessions,
   type DailyChallengeResult,
   type LabBest,
@@ -49,8 +54,11 @@ interface Raw {
   evidence: Evidence[];
   sessions: { startedAt: number; seconds: number }[];
   dailyToday: DailyChallengeResult | null;
-  counters: { perfectLessons: number; distinctGamesPlayed: number; dailyChallenges: number; labsPassed: number };
+  counters: Awaited<ReturnType<typeof loadCounters>>;
   labBests: Map<string, LabBest>;
+  questionStats: Map<string, QuestionStat>;
+  mocks: MockSummary[];
+  bookmarks: Set<string>;
 }
 
 interface ProgressCtx {
@@ -74,6 +82,10 @@ interface ProgressCtx {
   dailyToday: DailyChallengeResult | null;
   badges: Badge[];
   labBests: Map<string, LabBest>;
+  questionStats: Map<string, QuestionStat>;
+  mocks: MockSummary[];
+  bookmarks: Set<string>;
+  playedGames: Set<string>;
   refresh: () => Promise<void>;
 }
 
@@ -91,7 +103,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     // Completed lessons always have their flashcards in the deck (also back-fills Phase 1 progress).
     const completedIds = statuses.filter((s) => s.status === 'completed').map((s) => s.lessonId);
     await ensureCards(db, completedIds.flatMap((id) => flashcardsByLesson.get(id) ?? []));
-    const [stats, cards, evidence, sessions, dailyToday, counters, labBests] = await Promise.all([
+    const [stats, cards, evidence, sessions, dailyToday, counters, labBests, questionStats, mocks, bookmarks] = await Promise.all([
       loadDailyStats(db),
       getCards(db),
       loadEvidence(db),
@@ -99,8 +111,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       getDailyChallenge(db, today),
       loadCounters(db),
       loadLabBests(db),
+      loadQuestionStats(db),
+      loadMocks(db),
+      loadBookmarks(db),
     ]);
-    return { today, now: now.getTime(), stats, statuses, cards, evidence, sessions, dailyToday, counters, labBests };
+    return { today, now: now.getTime(), stats, statuses, cards, evidence, sessions, dailyToday, counters, labBests, questionStats, mocks, bookmarks };
   }, [db]);
 
   const refresh = useCallback(async () => setRaw(await load()), [load]);
@@ -177,8 +192,14 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         totalMinutes: Math.floor(totalSeconds / 60),
         labsPassed: raw.counters.labsPassed,
         totalLabs: contentPack.labs.length,
+        mocksCompleted: raw.counters.mocksCompleted,
+        bestMockScore: raw.counters.bestMockScore,
       }),
       labBests: raw.labBests,
+      questionStats: raw.questionStats,
+      mocks: raw.mocks,
+      bookmarks: raw.bookmarks,
+      playedGames: new Set(raw.counters.playedGames),
       refresh,
     };
   }, [raw, refresh, settings.focusRoadmapId]);

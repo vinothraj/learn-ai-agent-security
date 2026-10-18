@@ -117,6 +117,42 @@ const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_lab_attempts_lab ON lab_attempts(lab_id);
   CREATE INDEX IF NOT EXISTS idx_lab_attempts_day ON lab_attempts(day);
   `,
+  // v4 (Phase 4): interview practice and mock interviews (answers stay on this device)
+  `
+  CREATE TABLE IF NOT EXISTS interview_answers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question_id TEXT NOT NULL,
+    lesson_id TEXT,
+    topic TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK (mode IN ('practice', 'mock')),
+    session_id TEXT,
+    answer TEXT NOT NULL,
+    coverage INTEGER NOT NULL CHECK (coverage BETWEEN 0 AND 100),
+    self_rating INTEGER CHECK (self_rating BETWEEN 1 AND 4),
+    day TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_answers_day ON interview_answers(day);
+  CREATE INDEX IF NOT EXISTS idx_answers_question ON interview_answers(question_id);
+
+  CREATE TABLE IF NOT EXISTS mock_sessions (
+    id TEXT PRIMARY KEY NOT NULL,
+    role_id TEXT NOT NULL,
+    minutes INTEGER NOT NULL,
+    questions INTEGER NOT NULL,
+    answered INTEGER NOT NULL,
+    score INTEGER NOT NULL,
+    by_topic TEXT NOT NULL,
+    day TEXT NOT NULL,
+    started_at INTEGER NOT NULL,
+    completed_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS interview_bookmarks (
+    question_id TEXT PRIMARY KEY NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 export async function migrate(db: SQLiteDatabase) {

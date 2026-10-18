@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { InterviewItem, InterviewRole } from './interview';
 import { Lab } from './labs';
 import { Flashcard, Game, Lesson, Roadmap, SkillArea, ThreatItem } from './schema';
 
@@ -12,5 +13,6 @@ export const ContentPack = z.object({
   games: z.array(Game),
   skills: z.array(SkillArea),
   labs: z.array(Lab),
+  interview: z.object({ roles: z.array(InterviewRole), items: z.array(InterviewItem) }),
 });
 export type ContentPack = z.infer<typeof ContentPack>;

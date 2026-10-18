@@ -1,0 +1,29 @@
+# 10-minute mock interview: answer the first question, skip the rest, check the scorecard.
+appId: com.vinoth.aiagentsecurity
+---
+- launchApp
+- tapOn: "Practice"
+- scrollUntilVisible:
+    element: "Interview prep"
+- tapOn: "Interview prep"
+- tapOn: "Start a mock interview"
+- tapOn: "Start 10-minute interview"
+- assertVisible: "QUESTION 1 OF 4"
+- tapOn:
+    text: "Type your answer as you would say it…"
+    optional: true
+- inputText: "I would enforce access control on retrieval, keep secrets out of the prompt, use least privilege tools, require human approval and log every tool call."
+- hideKeyboard
+- tapOn:
+    text: "A"
+    optional: true
+- tapOn: "Submit & next"
+- repeat:
+    while:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+- assertVisible: "1/4 answered.*"
+- assertVisible: "BY TOPIC"
+- tapOn: "Done"
+- assertVisible: "Recent mock interviews"

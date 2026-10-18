@@ -10,6 +10,8 @@ export interface BadgeInput {
   totalMinutes: number;
   labsPassed: number;
   totalLabs: number;
+  mocksCompleted: number;
+  bestMockScore: number;
 }
 
 export interface Badge {
@@ -53,6 +55,8 @@ export function computeBadges(i: BadgeInput): Badge[] {
     def('all-games', 'Game Master', 'Play every mini-game', i.distinctGamesPlayed, i.totalGames),
     def('first-lab', 'Lab Rat', 'Pass your first security lab', i.labsPassed, 1),
     def('all-labs', 'Red Team Ready', 'Pass every security lab', i.labsPassed, i.totalLabs),
+    def('mock-1', 'Interview Ready', 'Complete a mock interview', i.mocksCompleted, 1),
+    def('mock-80', 'Offer Letter', 'Score 80%+ in a mock interview', i.bestMockScore, 80),
     def('hour', 'Dedicated', 'Spend 60 active minutes learning', i.totalMinutes, 60),
   ];
 }

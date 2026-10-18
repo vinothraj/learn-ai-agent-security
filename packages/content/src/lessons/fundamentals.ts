@@ -57,7 +57,7 @@ export const fundamentalsLessons: Lesson[] = [
       id: 'f-lc-iq',
       question: 'Explain to a developer why system prompts cannot enforce security rules.',
       modelAnswer:
-        'The model receives one sequence of tokens. The system prompt, user input and retrieved content are all just text in the same context. Models are trained to prioritize system instructions, but that is a learned behavior that adversarial text can override, and outputs are probabilistic. So rules like "never reveal X" are best-effort guidance. Real enforcement belongs in code: don\'t put secrets in context, check authorization server-side and validate outputs.',
+        'The model receives one sequence of tokens. The system prompt, user input and retrieved content are all just text in the same context. Message roles are learned conventions: models are trained to prioritize system instructions, but adversarial text can override that, and outputs are probabilistic. So the system prompt is not a security boundary, and rules like "never reveal X" are best-effort guidance. Real enforcement belongs in code: don\'t put secrets in context, check authorization server-side and validate outputs.',
       keyConcepts: ['single token sequence', 'roles are learned', 'not a security boundary', 'probabilistic output', 'enforce in code'],
       evidence: 'established',
     },

@@ -40,7 +40,7 @@ export default function Home() {
   const recommendedLab = contentPack.labs.find((l) => l.lessonId && completed.has(l.lessonId) && !labBests.get(l.id)?.passed);
 
   const threat = pickDaily(contentPack.threats, today, 'threat');
-  const interviewLesson = pickDaily(contentPack.lessons, today, 'interview');
+  const interviewQ = pickDaily(contentPack.interview.items.filter((q) => q.type !== 'mcq'), today, 'interview');
   const nextRoadmap = next ? roadmapById.get(next.roadmapId) : null;
   const resuming = next && inProgress?.lessonId === next.id;
   const week = compareWeeks(stats, today);
@@ -203,16 +203,16 @@ export default function Home() {
         </Appear>
       ) : null}
 
-      {interviewLesson ? (
+      {interviewQ ? (
         <Appear index={i++}>
-          <Card onPress={() => router.push(`/interview?focus=${interviewLesson.interview.id}`)} accessibilityLabel="Interview question of the day">
+          <Card onPress={() => router.push(`/interview/q/${interviewQ.id}`)} accessibilityLabel="Interview question of the day">
             <Row>
               <IconBadge icon={MessageSquareText} color={theme.info} />
               <View style={{ flex: 1 }}>
                 <T v="caption" color={theme.info}>
                   INTERVIEW QUESTION OF THE DAY
                 </T>
-                <T v="heading">{interviewLesson.interview.question}</T>
+                <T v="heading">{interviewQ.question}</T>
               </View>
             </Row>
           </Card>

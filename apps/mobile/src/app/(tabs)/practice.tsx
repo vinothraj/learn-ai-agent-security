@@ -110,8 +110,8 @@ export default function Practice() {
         <Item
           icon={MessageSquareText}
           color={theme.info}
-          title="Interview question bank"
-          detail="Model answers, key concepts and evidence labels"
+          title="Interview prep"
+          detail={`${contentPack.interview.items.length} questions · 7 role plans · timed mock interviews`}
           onPress={() => router.push('/interview')}
         />
       </Appear>

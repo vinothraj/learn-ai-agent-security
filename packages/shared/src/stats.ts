@@ -14,6 +14,7 @@ export interface DailyStat {
   /** Simulated security tests executed in labs. */
   labRuns: number;
   labsPassed: number;
+  interviewAnswers: number;
   xp: number;
 }
 
@@ -30,14 +31,15 @@ export function emptyDay(day: string): DailyStat {
     cardsReviewed: 0,
     labRuns: 0,
     labsPassed: 0,
+    interviewAnswers: 0,
     xp: 0,
   };
 }
 
 export const minutes = (seconds: number) => Math.floor(seconds / 60);
 
-/** Practice items = quiz questions + game rounds + simulated lab tests. */
-export const practiceItems = (d: DailyStat) => d.questionsAnswered + d.gameRounds + d.labRuns;
+/** Practice items = quiz questions + game rounds + simulated lab tests + interview answers. */
+export const practiceItems = (d: DailyStat) => d.questionsAnswered + d.gameRounds + d.labRuns + d.interviewAnswers;
 
 /** Fills gaps so charts always get one entry per day, oldest first. */
 export function series(stats: Map<string, DailyStat>, endDay: string, n: number): DailyStat[] {

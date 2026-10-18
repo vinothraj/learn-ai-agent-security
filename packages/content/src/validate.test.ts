@@ -1,4 +1,4 @@
-import { ContentPack, labIssues } from '@laas/shared';
+import { ContentPack, itemsForRole, labIssues, scoreAnswer } from '@laas/shared';
 import { describe, expect, it } from 'vitest';
 import { contentPack } from './index';
 
@@ -101,6 +101,51 @@ describe('content pack', () => {
     }
     const attackIds = contentPack.labs.flatMap((l) => l.attacks.map((a) => a.id));
     expect(new Set(attackIds).size).toBe(attackIds.length);
+  });
+
+  it('has a consistent interview bank and 7 role plans that only reference real content', () => {
+    const { roles, items } = contentPack.interview;
+    expect(roles).toHaveLength(7);
+    const ids = items.map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const skills = new Set(contentPack.skills.map((s) => s.id));
+    const roleIds = new Set(roles.map((r) => r.id));
+    for (const i of items) {
+      expect(skills.has(i.topic), `${i.id} topic`).toBe(true);
+      for (const r of i.roles) expect(roleIds.has(r), `${i.id} role ${r}`).toBe(true);
+      if (i.lessonId) expect(byLesson(i.lessonId), `${i.id} lesson`).toBe(true);
+    }
+    const labs = new Set(contentPack.labs.map((l) => l.id));
+    const games = new Set(contentPack.games.map((g) => g.id));
+    for (const r of roles) {
+      for (const s of r.focusSkills) expect(skills.has(s), `${r.id} skill ${s}`).toBe(true);
+      for (const w of r.weeks)
+        for (const t of w.tasks) {
+          const [kind, ref] = t.split(':');
+          if (kind === 'lesson') expect(byLesson(ref!), `${r.id} ${t}`).toBe(true);
+          if (kind === 'lab') expect(labs.has(ref!), `${r.id} ${t}`).toBe(true);
+          if (kind === 'game') expect(games.has(ref!), `${r.id} ${t}`).toBe(true);
+          if (kind === 'topic') expect(skills.has(ref!), `${r.id} ${t}`).toBe(true);
+        }
+      // Each role needs enough questions for the longest (30 min, 10 question) mock.
+      expect(itemsForRole(items, r).length, r.id).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('scores every model answer highly on its own rubric (keywords are reachable)', () => {
+    for (const i of contentPack.interview.items) {
+      if (i.type === 'mcq') continue;
+      const s = scoreAnswer(i, i.modelAnswer);
+      expect(s.coverage, `${i.id} missed: ${s.missed.join(' | ')}`).toBeGreaterThanOrEqual(80);
+    }
+  });
+
+  it('gives a vague, generic answer a low score', () => {
+    const vague = 'I would make sure it is secure and follow best practices and talk to the team about it.';
+    for (const i of contentPack.interview.items) {
+      if (i.type === 'mcq') continue;
+      expect(scoreAnswer(i, vague).coverage, i.id).toBeLessThanOrEqual(40);
+    }
   });
 
   it('keeps unreviewed content clearly flagged', () => {

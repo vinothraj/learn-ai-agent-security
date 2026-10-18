@@ -16,7 +16,10 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
 - **Phase 3 (security labs): done.** Data-driven simulation engine (`packages/shared/src/labs.ts`),
   10 labs (one per required category), interactive architecture diagrams, attack → defend → report
   flow with decoy controls and 0–3 stars, OWASP-style severity, PDF report export (expo-print).
-- **Next: Phase 4.** Interview prep: role-based question banks, mock interviews, deterministic scoring.
+- **Phase 4 (interview prep): done.** 40-question bank (27 curated + 13 from lessons), 7 role plans
+  with auto-ticking weekly tasks, practice mode with transparent rubric scoring, self-rating and
+  bookmarks, timed 10/20/30-min mock interviews with per-topic scorecards and revision links.
+- **Next: Phase 5.** Backend (Fastify + Postgres), Supabase Auth, RBAC, `/sync`, account deletion.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout
@@ -64,6 +67,10 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
   pass `labIssues()` (decoy present, recommended set blocks all, nothing blocked with no controls or with
   decoys only). Labs simulate FICTIONAL systems only; never add real-target execution here.
 - Report HTML (`buildLabReportHtml`) lives in shared and escapes every string; it is unit-tested for escaping.
+- Interview scoring (`scoreAnswer`) is deterministic keyword/concept coverage with a small stemmer;
+  4+ char keyword stems match as prefixes. Content tests require every model answer to score ≥80% on its
+  own rubric and a vague answer ≤40%, so add rubric keywords that the model answer actually uses.
+  Always present the score as a coverage signal, never a hiring verdict.
 - E2E: Maestro flows in `apps/mobile/.maestro/` target an installed preview/dev build
   (`maestro test .maestro/`); they can't run in Expo Go.
 - Time tracking: credited only while foregrounded on a learning screen and within 60 s of the last

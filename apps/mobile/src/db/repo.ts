@@ -206,6 +206,11 @@ export async function loadDailyStats(db: SQLiteDatabase): Promise<Map<string, Da
     d.labsPassed = r.passed;
   }
 
+  const answers = await db.getAllAsync<{ day: string; n: number }>(
+    'SELECT day, COUNT(*) AS n FROM interview_answers GROUP BY day',
+  );
+  for (const r of answers) get(r.day).interviewAnswers = r.n;
+
   return map;
 }
 
@@ -321,7 +326,9 @@ export async function loadEvidence(db: SQLiteDatabase): Promise<Evidence[]> {
      UNION ALL
      SELECT lesson_id, correct, created_at FROM game_rounds WHERE lesson_id IS NOT NULL
      UNION ALL
-     SELECT lesson_id, passed AS correct, completed_at AS created_at FROM lab_attempts WHERE lesson_id IS NOT NULL`,
+     SELECT lesson_id, passed AS correct, completed_at AS created_at FROM lab_attempts WHERE lesson_id IS NOT NULL
+     UNION ALL
+     SELECT lesson_id, CASE WHEN coverage >= 60 THEN 1 ELSE 0 END AS correct, created_at FROM interview_answers WHERE lesson_id IS NOT NULL`,
   );
   return rows.map((r) => ({ lessonId: r.lesson_id, correct: r.correct === 1, at: r.created_at }));
 }
@@ -339,6 +346,9 @@ export async function loadCounters(db: SQLiteDatabase) {
     distinctGamesPlayed: await one('SELECT COUNT(DISTINCT game_id) AS n FROM game_rounds'),
     dailyChallenges: await one('SELECT COUNT(*) AS n FROM daily_challenges'),
     labsPassed: await one('SELECT COUNT(DISTINCT lab_id) AS n FROM lab_attempts WHERE passed = 1'),
+    mocksCompleted: await one('SELECT COUNT(*) AS n FROM mock_sessions WHERE answered > 0'),
+    bestMockScore: await one('SELECT COALESCE(MAX(score), 0) AS n FROM mock_sessions'),
+    playedGames: (await db.getAllAsync<{ game_id: string }>('SELECT DISTINCT game_id FROM game_rounds')).map((r) => r.game_id),
   };
 }
 
@@ -353,6 +363,9 @@ export async function resetAllProgress(db: SQLiteDatabase) {
     DELETE FROM game_rounds;
     DELETE FROM daily_challenges;
     DELETE FROM lab_attempts;
+    DELETE FROM interview_answers;
+    DELETE FROM mock_sessions;
+    DELETE FROM interview_bookmarks;
   `);
 }
 
@@ -401,4 +414,112 @@ export async function loadLabBests(db: SQLiteDatabase): Promise<Map<string, LabB
      FROM lab_attempts GROUP BY lab_id`,
   );
   return new Map(rows.map((r) => [r.lab_id, { labId: r.lab_id, stars: r.stars, passed: r.passed === 1, attempts: r.attempts }]));
+}
+
+// ---- Interview practice ----
+
+export interface InterviewAnswerInput {
+  questionId: string;
+  lessonId: string | null;
+  topic: string;
+  mode: 'practice' | 'mock';
+  sessionId: string | null;
+  answer: string;
+  coverage: number;
+  day: string;
+}
+
+/** Returns the row id so a self-rating can be attached afterwards. */
+export async function saveInterviewAnswer(db: SQLiteDatabase, a: InterviewAnswerInput): Promise<number> {
+  const res = await db.runAsync(
+    `INSERT INTO interview_answers (question_id, lesson_id, topic, mode, session_id, answer, coverage, day, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    a.questionId,
+    a.lessonId,
+    a.topic,
+    a.mode,
+    a.sessionId,
+    a.answer,
+    a.coverage,
+    a.day,
+    Date.now(),
+  );
+  return res.lastInsertRowId;
+}
+
+export async function rateInterviewAnswer(db: SQLiteDatabase, answerId: number, rating: number) {
+  await db.runAsync('UPDATE interview_answers SET self_rating = ? WHERE id = ?', rating, answerId);
+}
+
+export interface QuestionStat {
+  questionId: string;
+  best: number;
+  attempts: number;
+}
+
+export async function loadQuestionStats(db: SQLiteDatabase): Promise<Map<string, QuestionStat>> {
+  const rows = await db.getAllAsync<{ question_id: string; best: number; attempts: number }>(
+    'SELECT question_id, MAX(coverage) AS best, COUNT(*) AS attempts FROM interview_answers GROUP BY question_id',
+  );
+  return new Map(rows.map((r) => [r.question_id, { questionId: r.question_id, best: r.best, attempts: r.attempts }]));
+}
+
+export interface MockSessionInput {
+  id: string;
+  roleId: string;
+  minutes: number;
+  questions: number;
+  answered: number;
+  score: number;
+  byTopic: { topic: string; score: number; count: number }[];
+  day: string;
+  startedAt: number;
+}
+
+export async function saveMockSession(db: SQLiteDatabase, m: MockSessionInput) {
+  await db.runAsync(
+    `INSERT OR REPLACE INTO mock_sessions (id, role_id, minutes, questions, answered, score, by_topic, day, started_at, completed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    m.id,
+    m.roleId,
+    m.minutes,
+    m.questions,
+    m.answered,
+    m.score,
+    JSON.stringify(m.byTopic),
+    m.day,
+    m.startedAt,
+    Date.now(),
+  );
+}
+
+export interface MockSummary {
+  id: string;
+  roleId: string;
+  minutes: number;
+  score: number;
+  answered: number;
+  questions: number;
+  completedAt: number;
+}
+
+export async function loadMocks(db: SQLiteDatabase, limit = 10): Promise<MockSummary[]> {
+  return db.getAllAsync<MockSummary>(
+    `SELECT id, role_id AS roleId, minutes, score, answered, questions, completed_at AS completedAt
+     FROM mock_sessions ORDER BY completed_at DESC LIMIT ?`,
+    limit,
+  );
+}
+
+export async function loadBookmarks(db: SQLiteDatabase): Promise<Set<string>> {
+  const rows = await db.getAllAsync<{ question_id: string }>('SELECT question_id FROM interview_bookmarks');
+  return new Set(rows.map((r) => r.question_id));
+}
+
+export async function setBookmark(db: SQLiteDatabase, questionId: string, on: boolean) {
+  if (on) {
+    await db.runAsync('INSERT OR IGNORE INTO interview_bookmarks (question_id, created_at) VALUES (?, ?)', questionId, Date.now());
+  } else {
+    await db.runAsync('DELETE FROM interview_bookmarks WHERE question_id = ?', questionId);
+  }
 }
