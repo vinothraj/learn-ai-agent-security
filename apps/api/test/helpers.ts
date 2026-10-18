@@ -5,6 +5,7 @@ import type { Role } from '../src/auth';
 import { loadConfig } from '../src/config';
 import { pgDb, pgliteDb, type Db } from '../src/db';
 import { migrate } from '../src/db/migrations';
+import type { PushSender } from '../src/push';
 
 export interface TestCtx {
   app: FastifyInstance;
@@ -27,11 +28,11 @@ async function testDb(): Promise<Db> {
   return db;
 }
 
-export async function setup(env: Record<string, string> = {}): Promise<TestCtx> {
+export async function setup(env: Record<string, string> = {}, push: PushSender | null = null): Promise<TestCtx> {
   const config = loadConfig({ NODE_ENV: 'test', AUTH_MODE: 'dev', PGLITE_DIR: 'memory', ...env });
   const db = await testDb();
   await migrate(db);
-  const app = await buildApp({ config, db });
+  const app = await buildApp({ config, db, push });
   const login = async (role: Role = 'learner', email = `${randomUUID().slice(0, 8)}@example.test`) => {
     const id = randomUUID();
     const res = await app.inject({ method: 'POST', url: '/dev/token', payload: { sub: id, email, role } });

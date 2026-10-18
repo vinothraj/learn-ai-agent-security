@@ -29,7 +29,13 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
 - **Phase 7 (admin panel & CMS): done.** `apps/admin` (React + Vite + Tailwind + TanStack Query): dashboard,
   content CMS with live `packIssues` validation and four-eyes publishing, news review, sources and runs,
   users and roles, audit log, flags. API content versions; app applies published packs over the air.
-- **Next: Phase 8.** Notifications: daily recap, weekly report, push for advisories, caps and dedupe.
+- **Phase 8 (notifications): done.** Shared planner `planLocalNotifications` (reminder skipped once the goal
+  is met, recap only on active days, Sunday weekly report, quiet hours, stable ids). Mobile
+  `state/notifications.tsx` re-plans on change, routes taps (`safeRoute`), logs taps locally (v6
+  `notification_log`). API: `devices`/`notifications` tables (004), Expo push sender (injectable),
+  topics `advisories` (high-impact news on publish) and `content` (on content publish), dedupe, daily caps,
+  `push` flag, unregistered tokens removed.
+- **Next: Phase 9.** Aggregate engagement analytics and admin dashboards (MASTER_PROMPT §16).
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
 ## Layout

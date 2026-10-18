@@ -5,6 +5,7 @@ import { HttpError, parse, requireAuth, requireRole } from '../http';
 import { getSource, ingestSource } from '../news/ingest';
 import { CATEGORY_INFO } from '../news/mapping';
 import { CATEGORIES } from '../news/text';
+import { notifyTopic, type PushSender } from '../push';
 import { audit } from '../services';
 
 const PublicQuery = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20), before: z.iso.datetime().optional() });
@@ -79,7 +80,7 @@ const toPublic = (r: ArticleRow) => ({
   links: { lessonId: r.lesson_id, labId: r.lab_id, interviewId: r.interview_id },
 });
 
-export async function newsRoutes(app: FastifyInstance, { db }: { db: Db }) {
+export async function newsRoutes(app: FastifyInstance, { db, push }: { db: Db; push: PushSender | null }) {
   /** Published articles only. Public so guests can read news. */
   app.get('/v1/news', async (req, reply) => {
     const q = parse(PublicQuery, req.query);
@@ -108,16 +109,21 @@ export async function newsRoutes(app: FastifyInstance, { db }: { db: Db }) {
     const body = parse(Review, req.body);
     const status = body.action === 'publish' ? 'published' : 'rejected';
     const info = body.category ? CATEGORY_INFO[body.category] : null;
-    const { rows } = await db.query<{ id: string }>(
+    const { rows } = await db.query<{ id: string; title: string; high_impact: boolean; summary: string }>(
       `UPDATE news_articles SET review_status = $2, review_reason = COALESCE($3, review_reason), reviewed_by = $4, reviewed_at = now(),
          category = COALESCE($5, category), defense = COALESCE($6, defense), lesson_id = COALESCE($7, lesson_id),
          lab_id = COALESCE($8, lab_id), interview_id = COALESCE($9, interview_id),
          summary = COALESCE($10, summary), summary_origin = CASE WHEN $10::text IS NULL THEN summary_origin ELSE 'editor' END
-       WHERE id = $1 RETURNING id`,
+       WHERE id = $1 RETURNING id, title, high_impact, summary`,
       [id, status, body.reason ?? null, auth.id, body.category ?? null, info?.defense ?? null, info?.lessonId ?? null, info?.labId ?? null, info?.interviewId ?? null, body.summary ?? null],
     );
     if (!rows.length) throw new HttpError(404, 'Article not found');
     await audit(db, auth.id, `news.${body.action}`, { type: 'news_article', id }, { reason: body.reason ?? null, category: body.category ?? null });
+    // Only human-approved, high-impact advisories are pushed (dedupe per article and user, daily cap).
+    const a = rows[0]!;
+    if (status === 'published' && a.high_impact) {
+      await notifyTopic(db, push, { topic: 'advisories', type: 'advisory', ref: id, title: `Security advisory: ${a.title}`.slice(0, 120), body: a.summary.slice(0, 180), url: '/news' }, req.log);
+    }
     return { id, reviewStatus: status };
   });
 

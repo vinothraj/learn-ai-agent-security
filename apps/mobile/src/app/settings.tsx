@@ -6,7 +6,7 @@ import { Alert, Pressable, Switch, View } from 'react-native';
 
 import { Button, Card, Chip, Row, Screen, SectionTitle, T } from '@/components/ui';
 import { resetAllProgress } from '@/db/repo';
-import { cancelReminders, formatTime, scheduleDailyReminder } from '@/lib/reminders';
+import { ensurePermission, formatTime, notificationsSupported, pushAvailability } from '@/lib/notifications';
 import { useProgress } from '@/state/progress';
 import { useSync } from '@/state/sync';
 import { useSettings, type Settings } from '@/state/settings';
@@ -29,6 +29,19 @@ const TIMES: [number, number][] = [
   [20, 0],
   [21, 30],
 ];
+const RECAP_TIMES: [number, number][] = [
+  [19, 0],
+  [20, 30],
+  [21, 0],
+  [21, 30],
+];
+const QUIET: { label: string; start: number; end: number }[] = [
+  { label: '10 PM – 7 AM', start: 22, end: 7 },
+  { label: '11 PM – 8 AM', start: 23, end: 8 },
+  { label: '9 PM – 6 AM', start: 21, end: 6 },
+  { label: 'Off', start: 0, end: 0 },
+];
+const PERMISSION_OFF = ['Notifications are off', 'Allow notifications for this app in Android settings to get reminders.'] as const;
 
 function Toggle({ label, detail, value, onChange }: { label: string; detail: string; value: boolean; onChange: (v: boolean) => void }) {
   const { theme } = useTheme();
@@ -59,14 +72,25 @@ export default function SettingsScreen() {
   const sync = useSync();
   const set = (patch: Partial<Settings>) => update(patch);
 
-  const setReminder = async (enabled: boolean, hour = settings.reminderHour, minute = settings.reminderMinute) => {
-    if (!enabled) {
-      await cancelReminders();
-      return set({ reminderEnabled: false });
+  const push = pushAvailability();
+  /** Turning a notification on asks for permission first; the scheduler re-plans from settings. */
+  const enable = async (patch: Partial<Settings>) => {
+    const turningOn = Object.entries(patch).some(([k, v]) => k.endsWith('Enabled') || k.endsWith('Push') ? v === true : false);
+    if (turningOn && !(await ensurePermission())) {
+      if (notificationsSupported) Alert.alert(...PERMISSION_OFF);
+      return;
     }
-    const ok = await scheduleDailyReminder(hour, minute);
-    if (!ok) Alert.alert('Notifications are off', 'Allow notifications for this app in Android settings to get reminders.');
-    await set({ reminderEnabled: ok, reminderHour: hour, reminderMinute: minute });
+    await set(patch);
+  };
+  const setPush = async (patch: Partial<Settings>) => {
+    if (!sync.session) {
+      Alert.alert('Sign in needed', 'Advisory and new-content alerts are sent by the server, so they need an account. Reminders and recaps work without one.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Sign in', onPress: () => router.push('/account') },
+      ]);
+      return;
+    }
+    await enable(patch);
   };
 
   const confirmReset = () =>
@@ -166,13 +190,13 @@ export default function SettingsScreen() {
         />
       </Card>
 
-      <SectionTitle>Reminders</SectionTitle>
+      <SectionTitle>Notifications</SectionTitle>
       <Card>
         <Toggle
           label="Daily reminder"
-          detail="At most one local notification a day. Nothing leaves your phone."
+          detail="One nudge a day, skipped once you hit your goal. Scheduled on this phone."
           value={settings.reminderEnabled}
-          onChange={(v) => setReminder(v)}
+          onChange={(v) => enable({ reminderEnabled: v })}
         />
         {settings.reminderEnabled ? (
           <Row style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -181,11 +205,58 @@ export default function SettingsScreen() {
                 key={`${h}:${m}`}
                 label={formatTime(h, m)}
                 selected={settings.reminderHour === h && settings.reminderMinute === m}
-                onPress={() => setReminder(true, h, m)}
+                onPress={() => set({ reminderHour: h, reminderMinute: m })}
               />
             ))}
           </Row>
         ) : null}
+        <Toggle
+          label="Evening recap"
+          detail="What you did today, only on days you studied."
+          value={settings.recapEnabled}
+          onChange={(v) => enable({ recapEnabled: v })}
+        />
+        <Toggle
+          label="Weekly report"
+          detail="Sunday summary of your minutes, active days and lessons."
+          value={settings.weeklyReportEnabled}
+          onChange={(v) => enable({ weeklyReportEnabled: v })}
+        />
+        {settings.recapEnabled || settings.weeklyReportEnabled ? (
+          <Row style={{ flexWrap: 'wrap', gap: 8 }}>
+            {RECAP_TIMES.map(([h, m]) => (
+              <Chip
+                key={`${h}:${m}`}
+                label={formatTime(h, m)}
+                selected={settings.recapHour === h && settings.recapMinute === m}
+                onPress={() => set({ recapHour: h, recapMinute: m })}
+              />
+            ))}
+          </Row>
+        ) : null}
+        <T v="heading">Quiet hours</T>
+        <T v="caption" muted>
+          Nothing is sent in this window.
+        </T>
+        <Row style={{ flexWrap: 'wrap', gap: 8 }}>
+          {QUIET.map((q) => (
+            <Chip key={q.label} label={q.label} selected={settings.quietStart === q.start && settings.quietEnd === q.end} onPress={() => set({ quietStart: q.start, quietEnd: q.end })} />
+          ))}
+        </Row>
+      </Card>
+      <Card>
+        <Toggle
+          label="Security advisories"
+          detail={push.available ? 'High-impact items an editor has reviewed. At most 2 a day.' : `Unavailable: ${push.reason}`}
+          value={settings.advisoriesPush && push.available}
+          onChange={(v) => (push.available ? setPush({ advisoriesPush: v }) : undefined)}
+        />
+        <Toggle
+          label="New lessons"
+          detail={push.available ? 'When new content is published. At most 1 a day.' : `Unavailable: ${push.reason}`}
+          value={settings.contentPush && push.available}
+          onChange={(v) => (push.available ? setPush({ contentPush: v }) : undefined)}
+        />
       </Card>
 
       <SectionTitle>Account & privacy</SectionTitle>

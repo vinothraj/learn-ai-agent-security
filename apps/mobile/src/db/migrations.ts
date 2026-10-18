@@ -235,6 +235,17 @@ const MIGRATIONS: string[] = [
   CREATE UNIQUE INDEX IF NOT EXISTS ux_ia_sync ON interview_answers(sync_id);
   ${SYNC_TRIGGERS}
   `,
+  // v6: local log of notification taps (engagement is measured from real opens, on device).
+  `
+  CREATE TABLE IF NOT EXISTS notification_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    notification_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    event TEXT NOT NULL CHECK (event IN ('tapped')),
+    at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_notification_log_at ON notification_log(at);
+  `,
 ];
 
 export async function migrate(db: SQLiteDatabase) {

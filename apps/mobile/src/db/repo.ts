@@ -366,7 +366,12 @@ export async function resetAllProgress(db: SQLiteDatabase) {
     DELETE FROM interview_answers;
     DELETE FROM mock_sessions;
     DELETE FROM interview_bookmarks;
+    DELETE FROM notification_log;
   `);
+}
+
+export async function logNotificationTap(db: SQLiteDatabase, notificationId: string, type: string) {
+  await db.runAsync("INSERT INTO notification_log (notification_id, type, event, at) VALUES (?, ?, 'tapped', ?)", notificationId, type, Date.now());
 }
 
 // ---- Security labs ----

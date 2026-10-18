@@ -178,6 +178,42 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       CREATE INDEX idx_content_created ON content_versions(created_at DESC);
     `,
   },
+  {
+    id: '004_push',
+    sql: `
+      CREATE TABLE devices (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expo_token text NOT NULL UNIQUE,
+        platform text NOT NULL CHECK (platform IN ('android', 'ios')),
+        topics text[] NOT NULL DEFAULT '{}',
+        timezone text NOT NULL DEFAULT 'UTC',
+        created_at timestamptz NOT NULL DEFAULT now(),
+        last_seen_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX idx_devices_user ON devices(user_id);
+
+      -- One row per user per logical notification: the unique dedupe key prevents duplicates.
+      CREATE TABLE notifications (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type text NOT NULL CHECK (type IN ('advisory', 'content')),
+        dedupe_key text NOT NULL UNIQUE,
+        title text NOT NULL,
+        body text NOT NULL,
+        url text NOT NULL DEFAULT '/',
+        status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'sent', 'error', 'skipped')),
+        error text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        sent_at timestamptz,
+        tapped_at timestamptz
+      );
+      CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at DESC);
+
+      INSERT INTO feature_flags (key, enabled, description) VALUES ('push', true, 'Server push for advisories and new content')
+        ON CONFLICT (key) DO NOTHING;
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

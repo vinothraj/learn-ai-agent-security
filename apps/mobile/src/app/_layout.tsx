@@ -11,6 +11,7 @@ import { ContentUpdates } from '@/state/contentUpdates';
 import { ProgressProvider } from '@/state/progress';
 import { SettingsProvider } from '@/state/settings';
 import { NewsProvider } from '@/state/news';
+import { NotificationManager } from '@/state/notifications';
 import { SyncProvider } from '@/state/sync';
 import { TrackerProvider } from '@/state/tracker';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -66,6 +67,7 @@ export default function RootLayout() {
                     <NewsProvider>
                       <TrackerProvider>
                         <AppStack />
+                        <NotificationManager />
                       </TrackerProvider>
                     </NewsProvider>
                   </SyncProvider>

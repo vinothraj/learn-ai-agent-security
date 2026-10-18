@@ -33,6 +33,8 @@ interface SyncCtx {
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
   exportData: () => Promise<unknown>;
+  /** Authenticated API call; throws if signed out. */
+  call: <T>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
   deleteAccount: (eraseLocal: boolean) => Promise<{ authAccountDeleted: boolean }>;
 }
 
@@ -142,6 +144,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const exportData = useCallback(async () => api<unknown>(await withSession(), '/v1/me/export'), [withSession]);
+  const call = useCallback(async <T,>(path: string, init?: { method?: string; body?: unknown }) => api<T>(await withSession(), path, init), [withSession]);
 
   const deleteAccount = useCallback(
     async (eraseLocal: boolean) => {
@@ -173,6 +176,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         signOut,
         syncNow,
         exportData,
+        call,
         deleteAccount,
       }}>
       {children}

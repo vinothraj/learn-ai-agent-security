@@ -27,6 +27,10 @@ const EnvSchema = z.object({
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).default(300),
   /** Background feed ingestion. Off in tests; can be turned off per instance. */
   NEWS_INGESTION: z.enum(['on', 'off']).default('on'),
+  /** Server push via Expo. Off by default outside production; tests inject a fake sender. */
+  PUSH: z.enum(['on', 'off']).default('off'),
+  /** Optional Expo access token (enhanced push security). Server-side only. */
+  EXPO_ACCESS_TOKEN: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

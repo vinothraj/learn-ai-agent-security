@@ -12,16 +12,20 @@ import { openApiSpec } from './openapi';
 import { accountRoutes } from './routes/account';
 import { adminRoutes } from './routes/admin';
 import { contentRoutes } from './routes/content';
+import { deviceRoutes } from './routes/devices';
 import { newsRoutes } from './routes/news';
 import { syncRoutes } from './routes/sync';
 import { systemRoutes } from './routes/system';
+import { expoPushSender, type PushSender } from './push';
 import { upsertUser } from './services';
 
 const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/v1/news', '/v1/content/manifest', '/dev/token']);
 const PUBLIC_PREFIXES = ['/docs', '/v1/content/packs/'];
 
-export async function buildApp({ config, db, verifier }: { config: Config; db: Db; verifier?: Verifier }): Promise<FastifyInstance> {
+export async function buildApp({ config, db, verifier, push }: { config: Config; db: Db; verifier?: Verifier; push?: PushSender | null }): Promise<FastifyInstance> {
   const verify = verifier ?? createVerifier(config);
+  // null = push disabled: notifications are still recorded (status error) but nothing is sent.
+  const sender = push !== undefined ? push : config.PUSH === 'on' ? expoPushSender(config.EXPO_ACCESS_TOKEN) : null;
   const app = Fastify({
     logger:
       config.NODE_ENV === 'test'
@@ -86,7 +90,8 @@ export async function buildApp({ config, db, verifier }: { config: Config; db: D
   await app.register(accountRoutes, { db, config });
   await app.register(syncRoutes, { db });
   await app.register(adminRoutes, { db });
-  await app.register(newsRoutes, { db });
-  await app.register(contentRoutes, { db });
+  await app.register(newsRoutes, { db, push: sender });
+  await app.register(contentRoutes, { db, push: sender });
+  await app.register(deviceRoutes, { db });
   return app;
 }

@@ -16,6 +16,19 @@ export interface Settings {
   reminderEnabled: boolean;
   reminderHour: number;
   reminderMinute: number;
+  /** Evening recap of today's activity (only sent on days with activity). */
+  recapEnabled: boolean;
+  /** Sunday summary of the week. */
+  weeklyReportEnabled: boolean;
+  recapHour: number;
+  recapMinute: number;
+  /** Quiet hours [start, end) in local hours; equal values turn quiet hours off. */
+  quietStart: number;
+  quietEnd: number;
+  /** Server push for human-approved, high-impact advisories (needs an account and a store build). */
+  advisoriesPush: boolean;
+  /** Server push when new lessons are published. */
+  contentPush: boolean;
   /** Interview prep target role id. */
   targetRole: string;
 }
@@ -33,6 +46,14 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderEnabled: false,
   reminderHour: 20,
   reminderMinute: 0,
+  recapEnabled: false,
+  weeklyReportEnabled: false,
+  recapHour: 21,
+  recapMinute: 0,
+  quietStart: 22,
+  quietEnd: 7,
+  advisoriesPush: false,
+  contentPush: false,
   targetRole: 'ai-security-engineer',
 };
 

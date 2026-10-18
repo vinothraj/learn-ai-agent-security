@@ -35,7 +35,7 @@ import { WeekBars } from '@/components/charts';
 import { SkillRadar, StatPill, StudyHeatmap, TimeOfDayBars, TrendLine } from '@/components/reportCharts';
 import { TodayCard } from '@/components/TodayCard';
 import { Appear, Button, Card, ProgressBar, Row, Screen, SectionTitle, T } from '@/components/ui';
-import { formatTime, scheduleDailyReminder } from '@/lib/reminders';
+import { ensurePermission, formatTime } from '@/lib/notifications';
 import { useProgress } from '@/state/progress';
 import { useSettings } from '@/state/settings';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -96,8 +96,7 @@ export default function Me() {
 
   const applySuggestion = async () => {
     if (!suggestion) return;
-    const ok = await scheduleDailyReminder(suggestion.hour, suggestion.minute);
-    if (!ok) {
+    if (!(await ensurePermission())) {
       Alert.alert('Notifications are off', 'Allow notifications for this app in Android settings to get reminders.');
       return;
     }

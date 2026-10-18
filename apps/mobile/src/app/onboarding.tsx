@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, IconBadge, ProgressBar, Row, T } from '@/components/ui';
-import { formatTime, scheduleDailyReminder } from '@/lib/reminders';
+import { ensurePermission, formatTime } from '@/lib/notifications';
 import { useSettings } from '@/state/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { font, radius, space } from '@/theme/tokens';
@@ -32,14 +32,16 @@ export default function Onboarding() {
   const [time, setTime] = useState<[number, number] | null>([settings.reminderHour, settings.reminderMinute]);
 
   const finish = async () => {
-    let reminderEnabled = false;
-    if (time) reminderEnabled = await scheduleDailyReminder(time[0], time[1]);
+    // One permission covers the reminder, the evening recap and the Sunday report (all local).
+    const reminderEnabled = time ? await ensurePermission() : false;
     await update({
       onboarded: true,
       displayName: name.trim().slice(0, 40),
       goalMinutes: goal,
       focusRoadmapId: focus,
       reminderEnabled,
+      recapEnabled: reminderEnabled,
+      weeklyReportEnabled: reminderEnabled,
       reminderHour: time?.[0] ?? settings.reminderHour,
       reminderMinute: time?.[1] ?? settings.reminderMinute,
     });

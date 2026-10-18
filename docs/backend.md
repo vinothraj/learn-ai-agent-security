@@ -69,6 +69,8 @@ against Postgres with `TEST_DATABASE_URL=postgres://laas:laas@localhost:5432/laa
    | `DATABASE_URL` | Supabase Postgres connection string |
    | `CORS_ORIGINS` | admin panel origin(s), comma-separated |
    | `SUPER_ADMIN_EMAILS` | your email (bootstraps the first super-admin) |
+   | `PUSH` | `on` to send push notifications through Expo (default `off`) |
+   | `EXPO_ACCESS_TOKEN` | optional, if "enhanced push security" is enabled in your Expo account |
 
    The server refuses to start in production without these, and never enables dev tokens there.
 5. Run migrations: `npm run db:migrate --workspace apps/api` (or let the server apply them on boot).
@@ -91,6 +93,9 @@ recommended once real users depend on sync.
 | GET | `/v1/admin/stats`, `/v1/admin/users` | admin+ (user listing is audit-logged) |
 | PATCH | `/v1/admin/users/:id/role` | admin+ (admin roles: super-admin) |
 | GET | `/v1/admin/audit` | super-admin |
+| PUT | `/v1/devices` | signed in (register push token and topics) |
+| DELETE | `/v1/devices/:token` | signed in (own tokens only) |
+| POST | `/v1/notifications/:id/tapped` | signed in (records a real open) |
 
 Example:
 
@@ -140,3 +145,24 @@ Published packs are served at `/v1/content/manifest` and `/v1/content/packs/:id`
 newer pack in the background, checks its SHA-256 checksum and runs the same `packIssues()` validation,
 and applies it on the **next launch**. Packs that are invalid, tampered with or not newer than the
 bundled content are ignored. Set a higher pack version (e.g. `2026.11.1`) before publishing.
+
+## Notifications
+
+**Local (no server, no account):** the app plans its own schedule with `planLocalNotifications()`
+(`packages/shared/src/notifications.ts`): at most one reminder a day (skipped once the daily goal is
+met), an evening recap only on days with activity, and a Sunday weekly report. Nothing fires in quiet
+hours. The schedule is recomputed whenever progress or settings change, using stable ids, so it never
+duplicates. Taps open the matching screen and are logged on the device (`notification_log`).
+
+**Server push (opt-in, needs an account and an installed build):**
+
+- Topics: `advisories` (sent when an admin publishes a **high-impact** news item) and `content`
+  (sent when a content version is published).
+- Each user gets each event at most once (unique dedupe key), within a daily cap
+  (2 advisories, 1 content alert). Tokens Expo reports as `DeviceNotRegistered` are deleted.
+- Kill switch: the `push` feature flag (Admin → Settings). Sending also needs `PUSH=on`.
+- Taps are recorded only from the OS "notification opened" event.
+
+**Setup:** run `eas init` in `apps/mobile` (adds `extra.eas.projectId` to the app config), add an
+FCM V1 service-account key with `eas credentials` (Android), build with EAS, and set `PUSH=on` on the
+API. Expo Go cannot receive remote push; local reminders work everywhere except the web preview.

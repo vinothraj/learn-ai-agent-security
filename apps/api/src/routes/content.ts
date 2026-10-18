@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Db } from '../db';
 import { HttpError, parse, requireAuth, requireRole } from '../http';
+import { notifyTopic, type PushSender } from '../push';
 import { audit } from '../services';
 
 const Id = z.object({ id: z.uuid() });
@@ -37,7 +38,7 @@ const LIST_COLUMNS = 'id, label, status, issues, checksum, notes, created_by, cr
  * Content CMS: editors create and submit versions; admins review and publish. Packs are validated
  * with the same packIssues() the app runs before applying an update, so a broken pack can never ship.
  */
-export async function contentRoutes(app: FastifyInstance, { db }: { db: Db }) {
+export async function contentRoutes(app: FastifyInstance, { db, push }: { db: Db; push: PushSender | null }) {
   const get = async (id: string) => (await db.query<VersionRow & { pack: unknown }>(`SELECT ${LIST_COLUMNS}, pack FROM content_versions WHERE id = $1`, [id])).rows[0];
 
   // ---- Public delivery (apps download published packs) ----
@@ -130,6 +131,7 @@ export async function contentRoutes(app: FastifyInstance, { db }: { db: Db }) {
       );
       await audit(tx, auth.id, 'content.published', { type: 'content_version', id }, { label: row.label, checksum: row.checksum });
     });
+    await notifyTopic(db, push, { topic: 'content', type: 'content', ref: id, title: 'New lessons are available', body: 'Fresh AI security content was published. Open the app to get it.', url: '/' }, req.log);
     return { id, status: 'published' };
   });
 

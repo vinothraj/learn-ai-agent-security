@@ -77,6 +77,9 @@ export const openApiSpec = {
     '/v1/admin/flags': { get: { summary: 'Feature flags (admin)', security: bearer, responses: ok('Flags') } },
     '/v1/admin/flags/{key}': { patch: { summary: 'Toggle a flag (super-admin, audited)', security: bearer, responses: ok('Changed') } },
     '/v1/admin/users/export.csv': { get: { summary: 'User directory CSV (super-admin, audited)', security: bearer, responses: ok('CSV') } },
+    '/v1/devices': { put: { summary: 'Register this device for push topics (advisories, content)', security: bearer, responses: ok('Registered') } },
+    '/v1/devices/{token}': { delete: { summary: 'Unregister a push token owned by the caller', security: bearer, responses: ok('Removed') } },
+    '/v1/notifications/{id}/tapped': { post: { summary: 'Record that a push notification was opened', security: bearer, responses: ok('Recorded') } },
     '/v1/admin/audit': { get: { summary: 'Audit log (super-admin)', security: bearer, responses: ok('Entries') } },
   },
 };
