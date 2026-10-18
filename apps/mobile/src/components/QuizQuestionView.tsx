@@ -1,5 +1,6 @@
-import type { QuizQuestion } from '@laas/shared';
+import { shuffle, type QuizQuestion } from '@laas/shared';
 import { CircleCheck, CircleX } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -7,16 +8,26 @@ import { useHaptics, useTheme } from '@/theme/ThemeProvider';
 import { radius, space } from '@/theme/tokens';
 import { T } from './ui';
 
-/** One multiple-choice question with immediate, explained feedback. */
+/**
+ * One multiple-choice question with immediate, explained feedback. Options are shown in a
+ * random order per visit so answer position never gives the answer away; indices passed
+ * to and from callers always refer to the original option order.
+ */
 export function QuizQuestionView({
   question,
   answer,
   onAnswer,
+  shuffleOptions = true,
 }: {
   question: QuizQuestion;
   answer: number | null;
   onAnswer: (index: number) => void;
+  shuffleOptions?: boolean;
 }) {
+  const [order] = useState(() => {
+    const idx = question.options.map((_, i) => i);
+    return shuffleOptions ? shuffle(idx) : idx;
+  });
   const { theme, animate } = useTheme();
   const haptic = useHaptics();
   const answered = answer !== null;
@@ -25,7 +36,8 @@ export function QuizQuestionView({
   return (
     <View style={{ gap: space.md }}>
       <T v="title">{question.prompt}</T>
-      {question.options.map((opt, i) => {
+      {order.map((i, pos) => {
+        const opt = question.options[i]!;
         const isCorrect = i === question.correctIndex;
         const isChosen = i === answer;
         const border = !answered
@@ -42,7 +54,7 @@ export function QuizQuestionView({
             disabled={answered}
             accessibilityRole="button"
             accessibilityState={{ disabled: answered, selected: isChosen }}
-            accessibilityLabel={`Option ${i + 1}: ${opt}${answered && isCorrect ? ', correct answer' : ''}`}
+            accessibilityLabel={`Option ${pos + 1}: ${opt}${answered && isCorrect ? ', correct answer' : ''}`}
             onPress={() => {
               haptic(isCorrect ? 'success' : 'error');
               onAnswer(i);
@@ -72,7 +84,7 @@ export function QuizQuestionView({
               ) : answered && isChosen ? (
                 <CircleX size={22} color={theme.danger} />
               ) : (
-                <T v="label">{String.fromCharCode(65 + i)}</T>
+                <T v="label">{String.fromCharCode(65 + pos)}</T>
               )}
             </View>
             <T style={{ flex: 1 }}>{opt}</T>

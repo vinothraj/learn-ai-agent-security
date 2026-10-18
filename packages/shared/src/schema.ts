@@ -55,6 +55,8 @@ export const Lesson = z.object({
   minutes: z.number().int().min(2).max(15),
   tags: z.array(z.string()).min(1),
   prerequisites: z.array(id),
+  /** Supporting (Roadmap F) lessons recommended when the learner struggles with this one. */
+  supportLessons: z.array(id).optional(),
   objective: z.string().min(10),
   explanation: z.array(z.string().min(10)).min(1),
   example: z.object({ title: z.string(), body: z.string().min(20) }),
@@ -92,10 +94,80 @@ export const ThreatItem = z.object({
 });
 export type ThreatItem = z.infer<typeof ThreatItem>;
 
+export const Flashcard = z.object({
+  id,
+  lessonId: id,
+  front: z.string().min(5),
+  back: z.string().min(5),
+});
+export type Flashcard = z.infer<typeof Flashcard>;
+
+/** Multiple-choice round, optionally with a scenario (document, request, architecture) to inspect. */
+export const ChoiceRound = z
+  .object({
+    id,
+    lessonId: id.optional(),
+    prompt: z.string().min(10),
+    scenario: z.string().optional(),
+    options: z.array(z.string().min(1)).min(2).max(6),
+    correctIndex: z.number().int().min(0),
+    explanation: z.string().min(10),
+  })
+  .refine((r) => r.correctIndex < r.options.length, { message: 'correctIndex out of range', path: ['correctIndex'] });
+export type ChoiceRound = z.infer<typeof ChoiceRound>;
+
+/** Tap every segment that contains a malicious instruction. */
+export const SpotRound = z
+  .object({
+    id,
+    lessonId: id.optional(),
+    prompt: z.string().min(10),
+    segments: z.array(z.object({ text: z.string().min(3), malicious: z.boolean() })).min(3).max(8),
+    explanation: z.string().min(10),
+  })
+  .refine((r) => r.segments.some((s) => s.malicious), { message: 'needs at least one malicious segment' });
+export type SpotRound = z.infer<typeof SpotRound>;
+
+/** Pair each finding with its remediation. */
+export const MatchRound = z.object({
+  id,
+  lessonId: id.optional(),
+  prompt: z.string().min(10),
+  pairs: z.array(z.object({ left: z.string().min(3), right: z.string().min(3) })).min(3).max(4),
+  explanation: z.string().min(10),
+});
+export type MatchRound = z.infer<typeof MatchRound>;
+
+const gameBase = {
+  id,
+  title: z.string(),
+  tagline: z.string(),
+  icon: z.enum(['spot', 'lock', 'database', 'tag', 'wrench', 'scale', 'link']),
+};
+
+export const Game = z.discriminatedUnion('kind', [
+  z.object({ ...gameBase, kind: z.literal('choice'), rounds: z.array(ChoiceRound).min(3) }),
+  z.object({ ...gameBase, kind: z.literal('spot'), rounds: z.array(SpotRound).min(3) }),
+  z.object({ ...gameBase, kind: z.literal('match'), rounds: z.array(MatchRound).min(3) }),
+]);
+export type Game = z.infer<typeof Game>;
+export type GameRound = ChoiceRound | SpotRound | MatchRound;
+
+/** Radar-chart axis: a named group of lessons. */
+export const SkillArea = z.object({
+  id,
+  label: z.string().min(3).max(20),
+  lessonIds: z.array(id).min(1),
+});
+export type SkillArea = z.infer<typeof SkillArea>;
+
 export const ContentPack = z.object({
   version: z.string(),
   roadmaps: z.array(Roadmap),
   lessons: z.array(Lesson),
   threats: z.array(ThreatItem),
+  flashcards: z.array(Flashcard),
+  games: z.array(Game),
+  skills: z.array(SkillArea),
 });
 export type ContentPack = z.infer<typeof ContentPack>;

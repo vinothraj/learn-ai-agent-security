@@ -57,6 +57,49 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX IF NOT EXISTS idx_xp_day ON xp_ledger(day);
   `,
+  // v2 (Phase 2): spaced repetition, mini-games, daily challenge
+  `
+  CREATE TABLE IF NOT EXISTS fsrs_cards (
+    card_id TEXT PRIMARY KEY NOT NULL,
+    lesson_id TEXT NOT NULL,
+    due INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_cards_due ON fsrs_cards(due);
+
+  CREATE TABLE IF NOT EXISTS card_reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    card_id TEXT NOT NULL,
+    lesson_id TEXT NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 4),
+    day TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_reviews_day ON card_reviews(day);
+
+  CREATE TABLE IF NOT EXISTS game_rounds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    game_id TEXT NOT NULL,
+    round_id TEXT NOT NULL,
+    lesson_id TEXT,
+    correct INTEGER NOT NULL CHECK (correct IN (0, 1)),
+    daily INTEGER NOT NULL DEFAULT 0 CHECK (daily IN (0, 1)),
+    day TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_rounds_day ON game_rounds(day);
+
+  CREATE TABLE IF NOT EXISTS daily_challenges (
+    day TEXT PRIMARY KEY NOT NULL,
+    game_id TEXT NOT NULL,
+    correct INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    completed_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 export async function migrate(db: SQLiteDatabase) {

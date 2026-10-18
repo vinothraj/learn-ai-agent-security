@@ -9,8 +9,11 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
 - **Phase 1 (offline MVP app): done.** Onboarding, theming, roadmaps, lesson player, quizzes, interview
   bank, threat briefings, XP/levels/streaks, active-time tracking, Today rings, weekly chart, insights,
   local daily reminder, settings.
-- **Next: Phase 2.** FSRS flashcards, mastery model, mini-games, daily challenge seed, year heatmap,
-  skill radar, time-of-day chart, share card.
+- **Phase 2 (learning depth): done.** 13 lessons (A–D, F), 52 FSRS flashcards, mastery model and
+  weak topics with "Fix in 5 min", 7 mini-games (choice/spot/match engines), deterministic daily
+  challenge, streak freezes, badges, Revise ring, 26-week heatmap, skill radar, mastery trend,
+  time-of-day analysis with reminder suggestion, shareable weekly report image, Maestro flows.
+- **Next: Phase 3.** Simulated security labs engine (10 labs) with interactive diagrams and PDF reports.
 
 ## Layout
 
@@ -44,7 +47,17 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
 - Content is TypeScript validated by zod (`ContentPack`). New lessons must pass `npm run validate:content`.
   Seed content is AI-assisted and stays `status: 'needs_review'` until a human reviews it.
 - Local DB: expo-sqlite with append-only migrations in `src/db/migrations.ts`; never edit a released one.
-- XP is idempotent via `xp_ledger UNIQUE(reason, ref)`.
+- XP is idempotent via `xp_ledger UNIQUE(reason, ref)`; `awardXp` returns what was actually granted.
+- expo-sqlite transactions are NOT exclusive. Wrap multi-statement writes in `inTransaction()` (queued);
+  prefer single atomic statements. Overlapping raw `withTransactionAsync` calls fail ("transaction within a transaction").
+- Multiple-choice options are shuffled at display time (`QuizQuestionView`), so author content in any
+  order; callers always use original indices. Labelled "A: …/B: …" options keep their order and are
+  balance-checked by a content test.
+- Badges, mastery, streak freezes and insights are derived from recorded data, never stored.
+- Daily challenge = `pickDaily` + `seededShuffle` on the date: identical for every learner that day;
+  first completion counts (`daily_challenges` PK on day).
+- E2E: Maestro flows in `apps/mobile/.maestro/` target an installed preview/dev build
+  (`maestro test .maestro/`); they can't run in Expo Go.
 - Time tracking: credited only while foregrounded on a learning screen and within 60 s of the last
   touch (`activeMsForTick`). Every learning screen calls `useStudySession(activity, contentId)`.
 - Insight sentences are deterministic rules over recorded data (`buildInsights`); never invent numbers.

@@ -1,5 +1,5 @@
-import { buildInsights, minutes, ringProgress } from '@laas/shared';
-import { Flame, Sparkles } from 'lucide-react-native';
+import { accuracyByPart, buildInsights, emptyDay, learnRing, practiceRing, reviseRing } from '@laas/shared';
+import { Flame, Snowflake, Sparkles } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { useProgress } from '@/state/progress';
@@ -8,20 +8,22 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { ActivityRings } from './charts';
 import { Card, Row, T } from './ui';
 
-export const PRACTICE_GOAL = 5;
-
-/** Today's rings, streak and the single most relevant data-driven insight. */
+/** Today's rings, streak (with banked freezes) and the most relevant data-driven insights. */
 export function TodayCard({ insightCount = 1 }: { insightCount?: number }) {
   const { theme } = useTheme();
   const { settings } = useSettings();
-  const { stats, today, streak } = useProgress();
-  const t = stats.get(today);
-  const goals = { learnMinutes: settings.goalMinutes, practiceQuestions: PRACTICE_GOAL, lessons: 1 };
-  const rp = ringProgress(
-    t ?? { day: today, activeSeconds: 0, byActivity: {}, lessonsCompleted: 0, questionsAnswered: 0, questionsCorrect: 0, xp: 0 },
-    goals,
-  );
-  const insights = buildInsights(stats, today, settings.goalMinutes, streak).slice(0, insightCount);
+  const { stats, today, streak, dueCards, cards, evidence } = useProgress();
+  const t = stats.get(today) ?? emptyDay(today);
+  const learn = learnRing(t, settings.goalMinutes);
+  const practice = practiceRing(t);
+  const revise = reviseRing(t.cardsReviewed, dueCards.length, cards.length);
+  const insights =
+    insightCount > 0
+      ? buildInsights(stats, today, settings.goalMinutes, streak, {
+          dueCards: dueCards.length,
+          partAccuracy: accuracyByPart(evidence),
+        }).slice(0, insightCount)
+      : [];
 
   return (
     <Card>
@@ -30,34 +32,29 @@ export function TodayCard({ insightCount = 1 }: { insightCount?: number }) {
           TODAY
         </T>
         {settings.gamification ? (
-          <Row style={{ gap: 6 }}>
-            <Flame size={18} color={streak.activeToday ? theme.warning : theme.textMuted} />
-            <T v="heading" color={streak.activeToday ? theme.warning : theme.textMuted}>
-              {streak.current} day{streak.current === 1 ? '' : 's'}
-            </T>
+          <Row style={{ gap: 10 }}>
+            {streak.freezes > 0 ? (
+              <Row style={{ gap: 3 }} accessibilityLabel={`${streak.freezes} streak freezes banked`}>
+                <Snowflake size={15} color={theme.info} />
+                <T v="label" color={theme.info}>
+                  {streak.freezes}
+                </T>
+              </Row>
+            ) : null}
+            <Row style={{ gap: 6 }}>
+              <Flame size={18} color={streak.activeToday ? theme.warning : theme.textMuted} />
+              <T v="heading" color={streak.activeToday ? theme.warning : theme.textMuted}>
+                {streak.current} day{streak.current === 1 ? '' : 's'}
+              </T>
+            </Row>
           </Row>
         ) : null}
       </Row>
       <ActivityRings
         rings={[
-          {
-            label: 'Learn',
-            value: rp.learn,
-            color: theme.accent,
-            detail: `${minutes(t?.activeSeconds ?? 0)} / ${settings.goalMinutes} min`,
-          },
-          {
-            label: 'Practice',
-            value: rp.practice,
-            color: theme.ringPractice,
-            detail: `${t?.questionsAnswered ?? 0} / ${PRACTICE_GOAL} questions`,
-          },
-          {
-            label: 'Lessons',
-            value: rp.lessons,
-            color: theme.ringLessons,
-            detail: `${t?.lessonsCompleted ?? 0} / 1 lesson`,
-          },
+          { label: 'Learn', value: learn.value, color: theme.accent, detail: learn.detail },
+          { label: 'Practice', value: practice.value, color: theme.ringPractice, detail: practice.detail },
+          { label: 'Revise', value: revise.value, color: theme.ringLessons, detail: revise.detail },
         ]}
       />
       {insights.map((i) => (

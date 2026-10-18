@@ -1,6 +1,7 @@
 import { addDays } from './dates';
 import { compareWeeks, emptyDay, isActiveDay, minutes, type DailyStat } from './stats';
 import type { StreakInfo } from './streak';
+import { DAY_PARTS, type DayPart } from './timeofday';
 
 export interface Insight {
   id: string;
@@ -16,15 +17,39 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
  * Deterministic, rule-based insight sentences. Every number comes from recorded data;
  * nothing is estimated or invented. Ordered most relevant first.
  */
+export interface InsightExtras {
+  dueCards?: number;
+  partAccuracy?: Record<DayPart, { n: number; c: number }>;
+}
+
+const MIN_PART_ATTEMPTS = 10;
+
 export function buildInsights(
   stats: Map<string, DailyStat>,
   today: string,
   goalMinutes: number,
   streak: StreakInfo,
+  extras: InsightExtras = {},
 ): Insight[] {
   const out: Insight[] = [];
   const t = stats.get(today) ?? emptyDay(today);
   const todayMin = minutes(t.activeSeconds);
+
+  if (streak.frozenDays.includes(addDays(today, -1)) && streak.current > 0) {
+    out.push({
+      id: 'freeze-used',
+      tone: 'info',
+      text: `A streak freeze covered yesterday, so your ${plural(streak.current, 'day')} streak is safe.`,
+    });
+  }
+
+  if (extras.dueCards && extras.dueCards > 0) {
+    out.push({
+      id: 'cards-due',
+      tone: 'nudge',
+      text: `${plural(extras.dueCards, 'flashcard')} ${extras.dueCards === 1 ? 'is' : 'are'} due for review.`,
+    });
+  }
 
   if (todayMin >= goalMinutes && goalMinutes > 0) {
     out.push({ id: 'goal-met', tone: 'celebrate', text: `Daily goal reached: ${plural(todayMin, 'min')} today.` });
@@ -75,6 +100,22 @@ export function buildInsights(
   if (t.questionsAnswered >= 5) {
     const pct = Math.round((t.questionsCorrect / t.questionsAnswered) * 100);
     if (pct >= 80) out.push({ id: 'accuracy', tone: 'celebrate', text: `${pct}% quiz accuracy today across ${t.questionsAnswered} questions.` });
+  }
+
+  if (extras.partAccuracy) {
+    const parts = DAY_PARTS.map((p) => ({ ...p, ...extras.partAccuracy![p.id] })).filter((p) => p.n >= MIN_PART_ATTEMPTS);
+    if (parts.length >= 2) {
+      const pct = (p: { n: number; c: number }) => Math.round((p.c / p.n) * 100);
+      const best = parts.reduce((a, b) => (pct(b) > pct(a) ? b : a));
+      const worst = parts.reduce((a, b) => (pct(b) < pct(a) ? b : a));
+      if (pct(best) - pct(worst) >= 15) {
+        out.push({
+          id: 'part-accuracy',
+          tone: 'info',
+          text: `Your quiz accuracy is higher in the ${best.label.toLowerCase()} (${pct(best)}% vs ${pct(worst)}% in the ${worst.label.toLowerCase()}).`,
+        });
+      }
+    }
   }
 
   if (!streak.activeToday) {

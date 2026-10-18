@@ -270,8 +270,23 @@ export function IconBadge({ icon: Icon, color, size = 40 }: { icon: LucideIcon; 
   );
 }
 
-export function Row({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return <View style={[{ flexDirection: 'row', alignItems: 'center', gap: space.md }, style]}>{children}</View>;
+export function Row({
+  children,
+  style,
+  accessibilityLabel,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <View
+      accessible={accessibilityLabel ? true : undefined}
+      accessibilityLabel={accessibilityLabel}
+      style={[{ flexDirection: 'row', alignItems: 'center', gap: space.md }, style]}>
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

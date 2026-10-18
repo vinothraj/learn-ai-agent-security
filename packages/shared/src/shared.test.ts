@@ -14,7 +14,9 @@ import {
   nextLesson,
   pickDaily,
   quizXp,
-  ringProgress,
+  learnRing,
+  practiceRing,
+  reviseRing,
   scoreQuiz,
   startOfWeek,
   type ContentPack,
@@ -80,11 +82,11 @@ describe('computeStreak', () => {
   const today = '2026-10-18';
   it('keeps yesterday\'s streak alive before today\'s session', () => {
     const s = computeStreak(['2026-10-15', '2026-10-16', '2026-10-17'], today);
-    expect(s).toEqual({ current: 3, longest: 3, activeToday: false });
+    expect(s).toMatchObject({ current: 3, longest: 3, activeToday: false, freezes: 0 });
   });
   it('counts today and reports longest historic run', () => {
     const s = computeStreak(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-17', today], today);
-    expect(s).toEqual({ current: 2, longest: 4, activeToday: true });
+    expect(s).toMatchObject({ current: 2, longest: 4, activeToday: true });
   });
   it('resets after a missed day', () => {
     expect(computeStreak(['2026-10-15'], today).current).toBe(0);
@@ -104,24 +106,27 @@ describe('stats', () => {
   it('returns null change when there is no baseline', () => {
     expect(compareWeeks(toMap([day(today, 60)]), today).changePct).toBeNull();
   });
-  it('caps ring progress at 1', () => {
-    const r = ringProgress(day(today, 1200, { questionsAnswered: 2, lessonsCompleted: 3 }), {
-      learnMinutes: 10,
-      practiceQuestions: 4,
-      lessons: 1,
-    });
-    expect(r).toEqual({ learn: 1, practice: 0.5, lessons: 1 });
+  it("computes ring values and caps them at 1", () => {
+    const d = day(today, 1200, { questionsAnswered: 2, gameRounds: 1 });
+    expect(learnRing(d, 10)).toEqual({ value: 1, detail: "20 / 10 min" });
+    expect(practiceRing(d)).toEqual({ value: 0.6, detail: "3 / 5 items" });
+  });
+  it("keeps the revise ring honest for empty, caught-up and partial decks", () => {
+    expect(reviseRing(0, 0, 0)).toEqual({ value: 0, detail: "Unlocks after a lesson" });
+    expect(reviseRing(0, 0, 12)).toEqual({ value: 1, detail: "All caught up" });
+    expect(reviseRing(1, 1, 12)).toEqual({ value: 0.5, detail: "1 / 2 cards" });
+    expect(reviseRing(2, 30, 40)).toEqual({ value: 0.4, detail: "2 / 5 cards" });
   });
 });
 
 describe('buildInsights', () => {
   const today = '2026-10-18';
-  const noStreak = { current: 0, longest: 0, activeToday: false };
+  const noStreak = { current: 0, longest: 0, activeToday: false, freezes: 0, frozenDays: [] as string[] };
   it('invites a first lesson for brand-new learners', () => {
     expect(buildInsights(new Map(), today, 10, noStreak).map((i) => i.id)).toEqual(['first-day']);
   });
   it('nudges when the goal is within 3 minutes', () => {
-    const ins = buildInsights(toMap([day(today, 8 * 60)]), today, 10, { current: 1, longest: 1, activeToday: true });
+    const ins = buildInsights(toMap([day(today, 8 * 60)]), today, 10, { ...noStreak, current: 1, longest: 1, activeToday: true });
     expect(ins[0]).toMatchObject({ id: 'goal-close', text: 'Just 2 mins to close your Learn ring.' });
   });
   it('compares today to the average of previous active days', () => {
@@ -131,7 +136,7 @@ describe('buildInsights', () => {
       day('2026-10-17', 300),
       day(today, 9 * 60),
     ]);
-    const ins = buildInsights(m, today, 20, { current: 4, longest: 4, activeToday: true });
+    const ins = buildInsights(m, today, 20, { ...noStreak, current: 4, longest: 4, activeToday: true });
     expect(ins.find((i) => i.id === 'above-avg')?.text).toBe('9 mins today: 4 mins more than your daily average.');
     expect(ins.find((i) => i.id === 'pb-day')).toBeDefined();
   });

@@ -1,8 +1,12 @@
+import { contentPack } from '@laas/content';
 import { router } from 'expo-router';
-import { ChevronRight, FlaskConical, Gamepad2, MessageSquareText, Zap, type LucideIcon } from 'lucide-react-native';
+import { Brain, CalendarCheck, ChevronRight, FlaskConical, MessageSquareText, Target, Zap, type LucideIcon } from 'lucide-react-native';
 import { View } from 'react-native';
 
+import { GAME_ICONS } from '@/components/games';
 import { Appear, Card, IconBadge, Row, Screen, SectionTitle, T, Tag } from '@/components/ui';
+import { dailyGame, reviewMinutes } from '@/lib/daily';
+import { useProgress } from '@/state/progress';
 import { useTheme } from '@/theme/ThemeProvider';
 
 function Item({
@@ -11,6 +15,7 @@ function Item({
   title,
   detail,
   onPress,
+  badge,
   soon,
 }: {
   icon: LucideIcon;
@@ -18,7 +23,8 @@ function Item({
   title: string;
   detail: string;
   onPress?: () => void;
-  soon?: string;
+  badge?: string;
+  soon?: boolean;
 }) {
   const { theme } = useTheme();
   return (
@@ -31,7 +37,7 @@ function Item({
             {detail}
           </T>
         </View>
-        {soon ? <Tag label={soon} color={theme.textMuted} /> : <ChevronRight size={20} color={theme.textMuted} />}
+        {badge ? <Tag label={badge} color={soon ? theme.textMuted : color} /> : <ChevronRight size={20} color={theme.textMuted} />}
       </Row>
     </Card>
   );
@@ -39,9 +45,39 @@ function Item({
 
 export default function Practice() {
   const { theme } = useTheme();
+  const { today, dailyToday, dueCards, cards } = useProgress();
+  const game = dailyGame(today);
+  let i = 0;
+
   return (
     <Screen title="Practice" subtitle="Short, safe exercises on fictional systems.">
-      <Appear index={0}>
+      <Appear index={i++}>
+        <Item
+          icon={dailyToday ? CalendarCheck : GAME_ICONS[game.icon] ?? Target}
+          color={dailyToday ? theme.success : theme.warning}
+          title={`Daily challenge: ${game.title}`}
+          detail={dailyToday ? `Done today: ${dailyToday.correct}/${dailyToday.total}. Replays are practice.` : 'Same puzzle for everyone today · +20 XP bonus'}
+          badge={dailyToday ? 'Done' : 'Today'}
+          onPress={() => router.push(`/game/${game.id}?daily=1`)}
+        />
+      </Appear>
+      <Appear index={i++}>
+        <Item
+          icon={Brain}
+          color={theme.ringLessons}
+          title="Flashcards"
+          detail={
+            cards.length === 0
+              ? 'Finish a lesson to unlock its cards'
+              : dueCards.length > 0
+                ? `${dueCards.length} due · ≈ ${reviewMinutes(dueCards.length)} min · spaced repetition (FSRS)`
+                : `All ${cards.length} cards caught up`
+          }
+          badge={dueCards.length > 0 ? String(dueCards.length) : undefined}
+          onPress={() => router.push('/review')}
+        />
+      </Appear>
+      <Appear index={i++}>
         <Item
           icon={Zap}
           color={theme.ringPractice}
@@ -50,7 +86,26 @@ export default function Practice() {
           onPress={() => router.push('/quiz')}
         />
       </Appear>
-      <Appear index={1}>
+
+      <Appear index={i++}>
+        <SectionTitle>Mini-games</SectionTitle>
+      </Appear>
+      {contentPack.games.map((g) => (
+        <Appear key={g.id} index={i++}>
+          <Item
+            icon={GAME_ICONS[g.icon] ?? Target}
+            color={theme.ringPractice}
+            title={g.title}
+            detail={g.tagline}
+            onPress={() => router.push(`/game/${g.id}`)}
+          />
+        </Appear>
+      ))}
+
+      <Appear index={i++}>
+        <SectionTitle>Interviews & labs</SectionTitle>
+      </Appear>
+      <Appear index={i++}>
         <Item
           icon={MessageSquareText}
           color={theme.info}
@@ -59,25 +114,14 @@ export default function Practice() {
           onPress={() => router.push('/interview')}
         />
       </Appear>
-      <Appear index={2}>
-        <SectionTitle>On the roadmap</SectionTitle>
-      </Appear>
-      <Appear index={3}>
+      <Appear index={i++}>
         <Item
           icon={FlaskConical}
           color={theme.success}
           title="Security labs"
           detail="Simulated prompt injection, RAG and agent-permission labs with reports"
-          soon="Soon"
-        />
-      </Appear>
-      <Appear index={4}>
-        <Item
-          icon={Gamepad2}
-          color={theme.warning}
-          title="Mini-games"
-          detail="Spot the Injection, Least Privilege, RAG Leak Hunt and more"
-          soon="Soon"
+          badge="Soon"
+          soon
         />
       </Appear>
     </Screen>

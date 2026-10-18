@@ -1,5 +1,26 @@
-import { emptyDay, type ActivityType, type DailyStat } from '@laas/shared';
+import {
+  deserializeCard,
+  emptyDay,
+  newCard,
+  serializeCard,
+  type ActivityType,
+  type Card,
+  type DailyStat,
+  type Evidence,
+} from '@laas/shared';
 import type { SQLiteDatabase } from 'expo-sqlite';
+
+let txQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * expo-sqlite transactions are not exclusive: a second BEGIN while one is open fails with
+ * "cannot start a transaction within a transaction". Queue ours so they never overlap.
+ */
+export function inTransaction(db: SQLiteDatabase, task: () => Promise<void>): Promise<void> {
+  const run = txQueue.then(() => db.withTransactionAsync(task));
+  txQueue = run.catch(() => undefined);
+  return run;
+}
 
 export interface LessonStatus {
   lessonId: string;
@@ -81,9 +102,10 @@ export async function recordResponse(
 }
 
 /** Idempotent per (reason, ref): replays and double-taps never double-award XP. */
-export async function awardXp(db: SQLiteDatabase, day: string, amount: number, reason: string, ref: string) {
-  if (amount <= 0) return;
-  await db.runAsync(
+/** Returns the XP actually granted (0 if this reason/ref was already awarded). */
+export async function awardXp(db: SQLiteDatabase, day: string, amount: number, reason: string, ref: string): Promise<number> {
+  if (amount <= 0) return 0;
+  const res = await db.runAsync(
     'INSERT OR IGNORE INTO xp_ledger (day, amount, reason, ref, created_at) VALUES (?, ?, ?, ?, ?)',
     day,
     amount,
@@ -91,6 +113,7 @@ export async function awardXp(db: SQLiteDatabase, day: string, amount: number, r
     ref,
     Date.now(),
   );
+  return res.changes > 0 ? amount : 0;
 }
 
 export async function addStudySeconds(
@@ -160,7 +183,151 @@ export async function loadDailyStats(db: SQLiteDatabase): Promise<Map<string, Da
   );
   for (const r of xp) get(r.day).xp = r.xp;
 
+  const rounds = await db.getAllAsync<{ day: string; n: number; c: number }>(
+    'SELECT day, COUNT(*) AS n, SUM(correct) AS c FROM game_rounds GROUP BY day',
+  );
+  for (const r of rounds) {
+    const d = get(r.day);
+    d.gameRounds = r.n;
+    d.gameCorrect = r.c;
+  }
+
+  const reviews = await db.getAllAsync<{ day: string; n: number }>(
+    'SELECT day, COUNT(*) AS n FROM card_reviews GROUP BY day',
+  );
+  for (const r of reviews) get(r.day).cardsReviewed = r.n;
+
   return map;
+}
+
+// ---- Flashcards (FSRS) ----
+
+export interface StoredCard {
+  cardId: string;
+  lessonId: string;
+  due: number;
+  card: Card;
+}
+
+/**
+ * Adds any missing cards for the given lessons in one statement (atomic, no transaction needed,
+ * so it is safe when several progress refreshes overlap). Existing schedules are untouched.
+ */
+export async function ensureCards(db: SQLiteDatabase, cards: readonly { id: string; lessonId: string }[]) {
+  if (cards.length === 0) return;
+  const now = Date.now();
+  const json = serializeCard(newCard(new Date(now)));
+  const params = cards.flatMap((c) => [c.id, c.lessonId, now, json, now, now]);
+  await db.runAsync(
+    `INSERT OR IGNORE INTO fsrs_cards (card_id, lesson_id, due, data, created_at, updated_at)
+     VALUES ${cards.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')}`,
+    params,
+  );
+}
+
+export async function getCards(db: SQLiteDatabase): Promise<StoredCard[]> {
+  const rows = await db.getAllAsync<{ card_id: string; lesson_id: string; due: number; data: string }>(
+    'SELECT card_id, lesson_id, due, data FROM fsrs_cards ORDER BY due ASC',
+  );
+  return rows.map((r) => ({ cardId: r.card_id, lessonId: r.lesson_id, due: r.due, card: deserializeCard(r.data) }));
+}
+
+export async function saveReview(
+  db: SQLiteDatabase,
+  r: { cardId: string; lessonId: string; card: Card; rating: number; day: string },
+) {
+  const now = Date.now();
+  await inTransaction(db, async () => {
+    await db.runAsync(
+      'UPDATE fsrs_cards SET due = ?, data = ?, updated_at = ? WHERE card_id = ?',
+      r.card.due.getTime(),
+      serializeCard(r.card),
+      now,
+      r.cardId,
+    );
+    await db.runAsync(
+      'INSERT INTO card_reviews (card_id, lesson_id, rating, day, created_at) VALUES (?, ?, ?, ?, ?)',
+      r.cardId,
+      r.lessonId,
+      r.rating,
+      r.day,
+      now,
+    );
+  });
+}
+
+// ---- Games and daily challenge ----
+
+export async function recordGameRound(
+  db: SQLiteDatabase,
+  r: { sessionId: string; gameId: string; roundId: string; lessonId: string | null; correct: boolean; daily: boolean; day: string },
+) {
+  await db.runAsync(
+    `INSERT INTO game_rounds (session_id, game_id, round_id, lesson_id, correct, daily, day, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    r.sessionId,
+    r.gameId,
+    r.roundId,
+    r.lessonId,
+    r.correct ? 1 : 0,
+    r.daily ? 1 : 0,
+    r.day,
+    Date.now(),
+  );
+}
+
+export interface DailyChallengeResult {
+  day: string;
+  gameId: string;
+  correct: number;
+  total: number;
+}
+
+/** The first completion of the day is the one that counts; replays don't overwrite it. */
+export async function completeDailyChallenge(db: SQLiteDatabase, r: DailyChallengeResult): Promise<boolean> {
+  const res = await db.runAsync(
+    'INSERT OR IGNORE INTO daily_challenges (day, game_id, correct, total, completed_at) VALUES (?, ?, ?, ?, ?)',
+    r.day,
+    r.gameId,
+    r.correct,
+    r.total,
+    Date.now(),
+  );
+  return res.changes > 0;
+}
+
+export async function getDailyChallenge(db: SQLiteDatabase, day: string): Promise<DailyChallengeResult | null> {
+  return db.getFirstAsync<DailyChallengeResult>(
+    'SELECT day, game_id AS gameId, correct, total FROM daily_challenges WHERE day = ?',
+    day,
+  );
+}
+
+// ---- Analytics inputs (all local) ----
+
+/** Quiz and game answers linked to a lesson: the evidence behind mastery scores. */
+export async function loadEvidence(db: SQLiteDatabase): Promise<Evidence[]> {
+  const rows = await db.getAllAsync<{ lesson_id: string; correct: number; created_at: number }>(
+    `SELECT lesson_id, correct, created_at FROM question_responses
+     UNION ALL
+     SELECT lesson_id, correct, created_at FROM game_rounds WHERE lesson_id IS NOT NULL`,
+  );
+  return rows.map((r) => ({ lessonId: r.lesson_id, correct: r.correct === 1, at: r.created_at }));
+}
+
+export async function loadSessions(db: SQLiteDatabase): Promise<{ startedAt: number; seconds: number }[]> {
+  return db.getAllAsync<{ startedAt: number; seconds: number }>(
+    'SELECT started_at AS startedAt, active_seconds AS seconds FROM study_sessions WHERE active_seconds > 0',
+  );
+}
+
+export async function loadCounters(db: SQLiteDatabase) {
+  const one = async (sql: string) => (await db.getFirstAsync<{ n: number }>(sql))?.n ?? 0;
+  return {
+    perfectLessons: await one('SELECT COUNT(*) AS n FROM lesson_progress WHERE best_score = 100'),
+    distinctGamesPlayed: await one('SELECT COUNT(DISTINCT game_id) AS n FROM game_rounds'),
+    dailyChallenges: await one('SELECT COUNT(*) AS n FROM daily_challenges'),
+  };
 }
 
 export async function resetAllProgress(db: SQLiteDatabase) {
@@ -169,5 +336,9 @@ export async function resetAllProgress(db: SQLiteDatabase) {
     DELETE FROM question_responses;
     DELETE FROM study_sessions;
     DELETE FROM xp_ledger;
+    DELETE FROM fsrs_cards;
+    DELETE FROM card_reviews;
+    DELETE FROM game_rounds;
+    DELETE FROM daily_challenges;
   `);
 }

@@ -44,6 +44,54 @@ describe('content pack', () => {
     for (const t of contentPack.threats) if (t.lessonId) expect(byLesson(t.lessonId), t.id).toBe(true);
   });
 
+  it('gives every lesson at least 3 flashcards that point at real lessons', () => {
+    for (const l of contentPack.lessons) {
+      expect(contentPack.flashcards.filter((c) => c.lessonId === l.id).length, l.id).toBeGreaterThanOrEqual(3);
+    }
+    for (const c of contentPack.flashcards) expect(byLesson(c.lessonId), c.id).toBe(true);
+  });
+
+  it('has 7 games with unique round ids, valid lesson links and unambiguous match pairs', () => {
+    expect(contentPack.games).toHaveLength(7);
+    const roundIds = contentPack.games.flatMap((g) => g.rounds.map((r) => r.id));
+    expect(new Set(roundIds).size).toBe(roundIds.length);
+    for (const g of contentPack.games) {
+      for (const r of g.rounds) {
+        if (r.lessonId) expect(byLesson(r.lessonId), r.id).toBe(true);
+        if (g.kind === 'match' && 'pairs' in r) {
+          const lefts = r.pairs.map((p) => p.left);
+          const rights = r.pairs.map((p) => p.right);
+          expect(new Set(lefts).size, r.id).toBe(lefts.length);
+          expect(new Set(rights).size, r.id).toBe(rights.length);
+        }
+      }
+    }
+  });
+
+  it('covers every lesson with at least one radar skill', () => {
+    const covered = new Set(contentPack.skills.flatMap((s) => s.lessonIds));
+    for (const s of contentPack.skills) for (const id of s.lessonIds) expect(byLesson(id), `${s.id}:${id}`).toBe(true);
+    for (const l of contentPack.lessons) expect(covered.has(l.id), l.id).toBe(true);
+    expect(contentPack.skills).toHaveLength(6);
+  });
+
+  it('only recommends supporting lessons from the supporting roadmap', () => {
+    const supporting = new Set(contentPack.roadmaps.filter((r) => r.kind === 'supporting').flatMap((r) => r.lessonIds));
+    for (const l of contentPack.lessons) for (const s of l.supportLessons ?? []) expect(supporting.has(s), `${l.id} -> ${s}`).toBe(true);
+  });
+
+  it('does not always put the right answer in the same slot for fixed-order (A/B) rounds', () => {
+    // Other multiple-choice options are shuffled at display time; labelled A/B designs are not.
+    for (const g of contentPack.games) {
+      if (g.kind !== 'choice') continue;
+      const fixed = g.rounds.filter((r) => r.options.every((o) => /^[A-Z]: /.test(o)));
+      if (fixed.length < 4) continue;
+      const counts = new Map<number, number>();
+      for (const r of fixed) counts.set(r.correctIndex, (counts.get(r.correctIndex) ?? 0) + 1);
+      expect(Math.max(...counts.values()) / fixed.length, g.id).toBeLessThanOrEqual(0.67);
+    }
+  });
+
   it('keeps unreviewed content clearly flagged', () => {
     // Seed content is written with AI assistance and must be human-reviewed before it is marked published.
     for (const l of contentPack.lessons) expect(['needs_review', 'reviewed', 'published']).toContain(l.status);

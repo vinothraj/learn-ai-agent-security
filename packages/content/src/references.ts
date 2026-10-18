@@ -57,4 +57,24 @@ export const REF = {
     publisher: 'Model Context Protocol',
     url: 'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
   },
+  owaspRiskRating: {
+    title: 'OWASP Risk Rating Methodology',
+    publisher: 'OWASP',
+    url: 'https://owasp.org/www-community/OWASP_Risk_Rating_Methodology',
+  },
+  cvss: {
+    title: 'Common Vulnerability Scoring System (CVSS)',
+    publisher: 'FIRST',
+    url: 'https://www.first.org/cvss/',
+  },
+  owaspAiTesting: {
+    title: 'OWASP AI Testing Guide',
+    publisher: 'OWASP',
+    url: 'https://owasp.org/www-project-ai-testing-guide/',
+  },
+  nistGenAiProfile: {
+    title: 'AI RMF: Generative AI Profile (NIST AI 600-1)',
+    publisher: 'NIST',
+    url: 'https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf',
+  },
 } satisfies Record<string, Reference>;

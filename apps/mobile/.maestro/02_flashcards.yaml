@@ -1,0 +1,14 @@
+# Requires flow 01 first (deck has cards). Reviews every due card as "Good".
+appId: com.vinoth.aiagentsecurity
+---
+- launchApp
+- tapOn: "Revision due"
+- repeat:
+    while:
+      visible: "Show answer"
+    commands:
+      - tapOn: "Show answer"
+      - tapOn: "Good"
+- assertVisible: "Session complete"
+- tapOn: "Done"
+- assertVisible: "TODAY"

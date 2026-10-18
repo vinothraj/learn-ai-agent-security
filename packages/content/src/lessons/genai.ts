@@ -7,6 +7,7 @@ export const genaiLessons: Lesson[] = [
   {
     ...common,
     id: 'b-prompt-injection',
+    supportLessons: ['f-llm-context'],
     title: 'Prompt injection: the basics',
     summary: 'How crafted input overrides an LLM application\'s intended behavior.',
     level: 'beginner',
@@ -81,6 +82,7 @@ export const genaiLessons: Lesson[] = [
   {
     ...common,
     id: 'b-indirect-prompt-injection',
+    supportLessons: ['f-llm-context', 'f-rag-basics'],
     title: 'Indirect prompt injection',
     summary: 'When web pages, emails or documents carry hidden instructions.',
     level: 'intermediate',
@@ -147,6 +149,7 @@ export const genaiLessons: Lesson[] = [
   {
     ...common,
     id: 'b-sensitive-info-disclosure',
+    supportLessons: ['f-rag-basics'],
     title: 'Sensitive information disclosure',
     summary: 'Stop LLM apps leaking personal data, secrets and other tenants\' data.',
     level: 'beginner',

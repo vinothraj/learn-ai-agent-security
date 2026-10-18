@@ -5,6 +5,9 @@ export const XP_RULES = {
   dailyGoalMet: 30,
 } as const;
 
+export const GAME_XP = { perCorrect: 5, perfectBonus: 10, dailyBonus: 20 } as const;
+export const REVIEW_XP = 2;
+
 export const LEVELS = [
   { title: 'Recruit', xp: 0 },
   { title: 'Analyst', xp: 200 },

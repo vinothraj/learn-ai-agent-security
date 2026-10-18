@@ -1,4 +1,4 @@
-import { lessonById } from '@laas/content';
+import { flashcardsByLesson, lessonById } from '@laas/content';
 import { dayKey, quizXp, scoreQuiz, XP_RULES, type EvidenceLevel } from '@laas/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -244,6 +244,16 @@ export default function LessonPlayer() {
                   </View>
                 ) : null}
               </Row>
+            ) : null}
+            {result?.first && (flashcardsByLesson.get(lesson.id)?.length ?? 0) > 0 ? (
+              <Card onPress={() => router.replace('/review')} accessibilityLabel="Review new flashcards">
+                <T v="heading" color={theme.ringLessons}>
+                  {flashcardsByLesson.get(lesson.id)!.length} flashcards added to your deck
+                </T>
+                <T v="caption" muted>
+                  Review them now and spaced repetition will bring them back right before you forget.
+                </T>
+              </Card>
             ) : null}
             <T v="label" muted>
               REFERENCES & FURTHER READING

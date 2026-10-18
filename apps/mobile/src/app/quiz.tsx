@@ -1,15 +1,15 @@
-import { contentPack } from '@laas/content';
-import { dayKey, quizXp, type QuizQuestion } from '@laas/shared';
-import { router } from 'expo-router';
+import { contentPack, lessonById } from '@laas/content';
+import { dayKey, quizXp, shuffle, type QuizQuestion } from '@laas/shared';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Trophy, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInRight, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { QuizQuestionView } from '@/components/QuizQuestionView';
-import { Button, IconBadge, ProgressBar, Row, T } from '@/components/ui';
+import { Button, IconBadge, ProgressBar, Row, T, Tag } from '@/components/ui';
 import { awardXp, recordResponse } from '@/db/repo';
 import { useProgress } from '@/state/progress';
 import { useSettings } from '@/state/settings';
@@ -19,12 +19,21 @@ import { space } from '@/theme/tokens';
 
 const QUIZ_SIZE = 5;
 
-/** Questions from lessons the learner has studied first (revision), topped up from available ones. */
-function pickQuestions(studied: Set<string>): { q: QuizQuestion; lessonId: string }[] {
-  const pool = contentPack.lessons.flatMap((l) => l.quiz.map((q) => ({ q, lessonId: l.id, studied: studied.has(l.id) })));
-  const shuffle = <T,>(a: T[]) => a.map((v) => [Math.random(), v] as const).sort((x, y) => x[0] - y[0]).map(([, v]) => v);
-  const fromStudied = shuffle(pool.filter((p) => p.studied));
-  const rest = shuffle(pool.filter((p) => !p.studied));
+/**
+ * Focused revision: the weak lesson's questions first, then studied lessons in the same skill area.
+ * Otherwise: questions from lessons the learner has studied first, topped up from the rest.
+ */
+function pickQuestions(studied: Set<string>, focus: string | undefined): { q: QuizQuestion; lessonId: string }[] {
+  const pool = contentPack.lessons.flatMap((l) => l.quiz.map((q) => ({ q, lessonId: l.id })));
+  if (focus && lessonById.has(focus)) {
+    const related = new Set(contentPack.skills.filter((s) => s.lessonIds.includes(focus)).flatMap((s) => s.lessonIds));
+    const own = shuffle(pool.filter((p) => p.lessonId === focus));
+    const near = shuffle(pool.filter((p) => p.lessonId !== focus && related.has(p.lessonId) && studied.has(p.lessonId)));
+    const rest = shuffle(pool.filter((p) => p.lessonId !== focus && !related.has(p.lessonId) && studied.has(p.lessonId)));
+    return [...own, ...near, ...rest].slice(0, QUIZ_SIZE);
+  }
+  const fromStudied = shuffle(pool.filter((p) => studied.has(p.lessonId)));
+  const rest = shuffle(pool.filter((p) => !studied.has(p.lessonId)));
   return [...fromStudied, ...rest].slice(0, QUIZ_SIZE);
 }
 
@@ -34,10 +43,13 @@ export default function QuickQuiz() {
   const haptic = useHaptics();
   const insets = useSafeAreaInsets();
   const { settings } = useSettings();
+  const { lesson: focus } = useLocalSearchParams<{ lesson?: string }>();
   const { statuses, refresh } = useProgress();
-  useStudySession('quiz', 'quick-quiz');
+  useStudySession('quiz', focus ? `focus:${focus}` : 'quick-quiz');
+  const focusLesson = focus ? lessonById.get(focus) : undefined;
 
-  const questions = useMemo(() => pickQuestions(new Set(statuses.keys())), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Picked once per visit; later progress refreshes must not reshuffle a running quiz.
+  const [questions] = useState(() => pickQuestions(new Set(statuses.keys()), focus));
   const [runId] = useState(() => String(Date.now()));
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
@@ -102,7 +114,8 @@ export default function QuickQuiz() {
             </T>
           </View>
         ) : current ? (
-          <Animated.View key={index} entering={animate ? FadeInRight.duration(260) : undefined}>
+          <Animated.View key={index} entering={animate ? FadeInRight.duration(260) : undefined} style={{ gap: space.md }}>
+            {focusLesson ? <Tag label={`FOCUSED REVISION · ${focusLesson.title}`} color={theme.warning} /> : null}
             <QuizQuestionView question={current.q} answer={answers[index] ?? null} onAnswer={answer} />
           </Animated.View>
         ) : (

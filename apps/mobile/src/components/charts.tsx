@@ -135,12 +135,15 @@ export function WeekBars({
   const y = (min: number) => topPad + chartH - (min / maxMin) * chartH;
 
   const segments = (d: DailyStat) => {
-    const lesson = (d.byActivity.lesson ?? 0) / 60;
-    const practice = ((d.byActivity.quiz ?? 0) + (d.byActivity.interview ?? 0)) / 60;
-    const other = Math.max(0, d.activeSeconds / 60 - lesson - practice);
+    const a = d.byActivity;
+    const lesson = (a.lesson ?? 0) / 60;
+    const practice = ((a.quiz ?? 0) + (a.game ?? 0) + (a.interview ?? 0) + (a.lab ?? 0)) / 60;
+    const revise = (a.review ?? 0) / 60;
+    const other = Math.max(0, d.activeSeconds / 60 - lesson - practice - revise);
     return [
       { v: lesson, color: theme.accent },
       { v: practice, color: theme.ringPractice },
+      { v: revise, color: theme.ringLessons },
       { v: other, color: theme.info },
     ];
   };
@@ -191,6 +194,7 @@ export function WeekBars({
       <View style={{ flexDirection: 'row', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
         <Legend color={theme.accent} label="Lessons" />
         <Legend color={theme.ringPractice} label="Practice" />
+        <Legend color={theme.ringLessons} label="Revise" />
         <Legend color={theme.info} label="Other" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View style={{ width: 14, borderTopWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textMuted }} />

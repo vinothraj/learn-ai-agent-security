@@ -1,0 +1,39 @@
+# Fresh install: onboarding -> complete the first lesson -> flashcards unlock.
+# Run against an installed preview/dev build:  maestro test .maestro/
+appId: com.vinoth.aiagentsecurity
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Learn AI & Agent Security"
+- tapOn: "Continue"
+- assertVisible: "Pick a daily goal"
+- tapOn: "10 min"
+- tapOn: "Continue"
+- assertVisible: "Where do you want to start?"
+- tapOn: "Continue"
+- tapOn: "No reminders"
+- tapOn: "Start learning"
+- assertVisible: "TODAY"
+- assertVisible: "Unlocks after a lesson"
+- tapOn: "TODAY'S LESSON"
+- assertVisible: "LEARNING OBJECTIVE"
+- repeat:
+    times: 3
+    commands:
+      - tapOn: "Continue"
+# Knowledge checks: answer whatever is first, then continue.
+- repeat:
+    while:
+      visible: "KNOWLEDGE CHECK.*"
+    commands:
+      - tapOn:
+          text: "A"
+          optional: true
+      - tapOn: "Continue"
+- assertVisible: "INTERVIEW PRACTICE"
+- tapOn: "Reveal model answer"
+- tapOn: "Finish lesson"
+- assertVisible: "Lesson complete"
+- assertVisible: ".*flashcards added to your deck"
+- tapOn: "Home"
+- assertVisible: "Revision due"

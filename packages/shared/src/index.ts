@@ -6,3 +6,7 @@ export * from './streak';
 export * from './stats';
 export * from './insights';
 export * from './progress';
+export * from './fsrs';
+export * from './mastery';
+export * from './timeofday';
+export * from './badges';

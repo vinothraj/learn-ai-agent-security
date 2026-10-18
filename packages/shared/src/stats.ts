@@ -8,6 +8,9 @@ export interface DailyStat {
   lessonsCompleted: number;
   questionsAnswered: number;
   questionsCorrect: number;
+  gameRounds: number;
+  gameCorrect: number;
+  cardsReviewed: number;
   xp: number;
 }
 
@@ -19,11 +22,17 @@ export function emptyDay(day: string): DailyStat {
     lessonsCompleted: 0,
     questionsAnswered: 0,
     questionsCorrect: 0,
+    gameRounds: 0,
+    gameCorrect: 0,
+    cardsReviewed: 0,
     xp: 0,
   };
 }
 
 export const minutes = (seconds: number) => Math.floor(seconds / 60);
+
+/** Practice items = quiz questions + game rounds. */
+export const practiceItems = (d: DailyStat) => d.questionsAnswered + d.gameRounds;
 
 /** Fills gaps so charts always get one entry per day, oldest first. */
 export function series(stats: Map<string, DailyStat>, endDay: string, n: number): DailyStat[] {
@@ -65,29 +74,36 @@ export function compareWeeks(stats: Map<string, DailyStat>, today: string): Week
 
 /** A day counts toward streaks if the learner did at least a minute or finished something. */
 export function isActiveDay(d: DailyStat): boolean {
-  return d.activeSeconds >= 60 || d.lessonsCompleted > 0 || d.questionsAnswered > 0;
+  return d.activeSeconds >= 60 || d.lessonsCompleted > 0 || practiceItems(d) > 0 || d.cardsReviewed > 0;
 }
 
-export interface RingGoals {
-  learnMinutes: number;
-  practiceQuestions: number;
-  lessons: number;
+export const PRACTICE_GOAL = 5;
+export const REVISE_GOAL = 5;
+
+export interface RingValue {
+  value: number; // 0..1, capped for drawing
+  detail: string;
 }
 
-export const DEFAULT_RING_GOALS: RingGoals = { learnMinutes: 10, practiceQuestions: 5, lessons: 1 };
-
-export interface Rings {
-  learn: number;
-  practice: number;
-  lessons: number;
-}
-
-/** Ring fill ratios, capped at 1 for drawing (values above goal are still shown as text). */
-export function ringProgress(today: DailyStat, goals: RingGoals): Rings {
-  const ratio = (v: number, g: number) => (g <= 0 ? 0 : Math.min(1, v / g));
+export function learnRing(today: DailyStat, goalMinutes: number): RingValue {
   return {
-    learn: ratio(today.activeSeconds / 60, goals.learnMinutes),
-    practice: ratio(today.questionsAnswered, goals.practiceQuestions),
-    lessons: ratio(today.lessonsCompleted, goals.lessons),
+    value: goalMinutes <= 0 ? 0 : Math.min(1, today.activeSeconds / 60 / goalMinutes),
+    detail: `${minutes(today.activeSeconds)} / ${goalMinutes} min`,
   };
+}
+
+export function practiceRing(today: DailyStat): RingValue {
+  const n = practiceItems(today);
+  return { value: Math.min(1, n / PRACTICE_GOAL), detail: `${n} / ${PRACTICE_GOAL} items` };
+}
+
+/**
+ * Revision ring. Goal is the smaller of 5 and what was actually available today, so a
+ * learner with few cards can still close it. An empty deck is shown honestly as locked.
+ */
+export function reviseRing(reviewedToday: number, dueNow: number, deckSize: number): RingValue {
+  if (deckSize === 0) return { value: 0, detail: 'Unlocks after a lesson' };
+  const goal = Math.min(REVISE_GOAL, reviewedToday + dueNow);
+  if (goal === 0) return { value: 1, detail: 'All caught up' };
+  return { value: Math.min(1, reviewedToday / goal), detail: `${reviewedToday} / ${goal} cards` };
 }

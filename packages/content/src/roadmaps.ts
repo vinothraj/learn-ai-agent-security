@@ -42,9 +42,9 @@ export const roadmaps: Roadmap[] = [
     title: 'Practical AI Security Testing',
     tagline: 'Plan, test, score and report findings.',
     description:
-      'Test planning, test-case design, pass/fail criteria, severity scoring, evidence and reporting. Lessons arrive in the next content pack.',
+      'Test planning, test-case design, pass/fail criteria, severity scoring, evidence and reporting.',
     kind: 'security',
-    lessonIds: [],
+    lessonIds: ['d-test-planning', 'd-severity-reporting'],
   },
   {
     id: 'interview-career',
@@ -64,6 +64,6 @@ export const roadmaps: Roadmap[] = [
     description:
       'LLM basics, embeddings, RAG and tool calling. Recommended when a security topic needs the background.',
     kind: 'supporting',
-    lessonIds: [],
+    lessonIds: ['f-llm-context', 'f-rag-basics'],
   },
 ];

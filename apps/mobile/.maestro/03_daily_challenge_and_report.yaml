@@ -1,0 +1,30 @@
+# Plays today's daily challenge and checks it is recorded on Home and in the report.
+# Works for every game type: choice rounds answer the first option, spot rounds flag the
+# first line, match rounds pair in order. Scores vary; only completion is asserted.
+appId: com.vinoth.aiagentsecurity
+---
+- launchApp
+- tapOn: "DAILY CHALLENGE"
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "A"
+          optional: true
+      - tapOn:
+          text: "Check"
+          optional: true
+      - tapOn:
+          text: "Next round"
+          optional: true
+      - tapOn:
+          text: "See results"
+          optional: true
+- assertVisible: ".*/5"
+- tapOn: "Done"
+- assertVisible: "DAILY CHALLENGE DONE.*"
+- tapOn: "Me"
+- assertVisible: "Your progress"
+- scrollUntilVisible:
+    element: "Badges.*"
+- assertVisible: "Badges.*"

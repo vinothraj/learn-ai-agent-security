@@ -63,3 +63,29 @@ export function pickDaily<T>(items: readonly T[], day: string, salt: string): T 
   if (items.length === 0) return null;
   return items[hash(`${salt}:${day}`) % items.length]!;
 }
+
+/** Deterministic shuffle (mulberry32 PRNG): the daily challenge is identical for everyone that day. */
+export function seededShuffle<T>(items: readonly T[], seed: string): T[] {
+  let a = hash(seed);
+  const rand = () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+export function shuffle<T>(items: readonly T[]): T[] {
+  return seededShuffle(items, `${Math.random()}`);
+}
+
+/** Lessons to recommend alongside a weak lesson: its incomplete supporting lessons. */
+export function supportFor(lesson: Lesson, completed: ReadonlySet<string>): string[] {
+  return (lesson.supportLessons ?? []).filter((id) => !completed.has(id));
+}

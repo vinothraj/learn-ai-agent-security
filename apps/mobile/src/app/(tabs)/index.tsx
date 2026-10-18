@@ -1,12 +1,25 @@
-import { contentPack, roadmapById } from '@laas/content';
-import { compareWeeks, minutes, pickDaily, series } from '@laas/shared';
+import { contentPack, lessonById, roadmapById } from '@laas/content';
+import { compareWeeks, minutes, pickDaily, series, supportFor } from '@laas/shared';
 import { router } from 'expo-router';
-import { ChevronRight, Clock, MessageSquareText, Play, Settings, ShieldAlert, Zap } from 'lucide-react-native';
+import {
+  Brain,
+  CalendarCheck,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  MessageSquareText,
+  Play,
+  Settings,
+  ShieldAlert,
+  Target,
+} from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { WeekBars } from '@/components/charts';
+import { GAME_ICONS } from '@/components/games';
 import { TodayCard } from '@/components/TodayCard';
 import { Appear, Card, IconBadge, ProgressBar, Row, Screen, SectionTitle, T, Tag } from '@/components/ui';
+import { dailyGame, reviewMinutes } from '@/lib/daily';
 import { lessonStepCount } from '@/lib/lesson';
 import { useProgress } from '@/state/progress';
 import { useSettings } from '@/state/settings';
@@ -21,13 +34,19 @@ function greeting(name: string) {
 export default function Home() {
   const { theme } = useTheme();
   const { settings } = useSettings();
-  const { next, inProgress, today, stats, level } = useProgress();
+  const { next, inProgress, today, stats, level, dueCards, dailyToday, weak, completed } = useProgress();
 
   const threat = pickDaily(contentPack.threats, today, 'threat');
   const interviewLesson = pickDaily(contentPack.lessons, today, 'interview');
   const nextRoadmap = next ? roadmapById.get(next.roadmapId) : null;
   const resuming = next && inProgress?.lessonId === next.id;
   const week = compareWeeks(stats, today);
+  const game = dailyGame(today);
+  const GameIcon = GAME_ICONS[game.icon] ?? Target;
+  const weakest = weak[0];
+  const weakLesson = weakest ? lessonById.get(weakest.lessonId) : undefined;
+  const support = weakLesson ? supportFor(weakLesson, completed).map((id) => lessonById.get(id)).filter((l) => l !== undefined) : [];
+  let i = 0;
 
   return (
     <Screen
@@ -38,12 +57,12 @@ export default function Home() {
           <Settings size={24} color={theme.textMuted} />
         </Pressable>
       }>
-      <Appear index={0}>
+      <Appear index={i++}>
         <TodayCard />
       </Appear>
 
       {next ? (
-        <Appear index={1}>
+        <Appear index={i++}>
           <Card accent onPress={() => router.push(`/lesson/${next.id}`)} accessibilityLabel={`${resuming ? 'Continue' : 'Start'} ${next.title}`}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Tag label={resuming ? 'CONTINUE LEARNING' : "TODAY'S LESSON"} />
@@ -68,22 +87,42 @@ export default function Home() {
           </Card>
         </Appear>
       ) : (
-        <Appear index={1}>
+        <Appear index={i++}>
           <Card accent>
             <T v="title">You’ve finished every available lesson</T>
-            <T muted>Revise with a quick quiz while the next content pack is prepared.</T>
+            <T muted>Keep your knowledge fresh with flashcards and games while new content is prepared.</T>
           </Card>
         </Appear>
       )}
 
-      <Appear index={2}>
-        <Card onPress={() => router.push('/quiz')} accessibilityLabel="Daily quick quiz">
+      {dueCards.length > 0 ? (
+        <Appear index={i++}>
+          <Card onPress={() => router.push('/review')} accessibilityLabel={`Review ${dueCards.length} flashcards`}>
+            <Row>
+              <IconBadge icon={Brain} color={theme.ringLessons} />
+              <View style={{ flex: 1 }}>
+                <T v="heading">Revision due</T>
+                <T v="caption" muted>
+                  {dueCards.length} flashcard{dueCards.length === 1 ? '' : 's'} · ≈ {reviewMinutes(dueCards.length)} min · fills your Revise ring
+                </T>
+              </View>
+              <ChevronRight size={20} color={theme.textMuted} />
+            </Row>
+          </Card>
+        </Appear>
+      ) : null}
+
+      <Appear index={i++}>
+        <Card onPress={() => router.push(`/game/${game.id}?daily=1`)} accessibilityLabel={`Daily challenge: ${game.title}`}>
           <Row>
-            <IconBadge icon={Zap} color={theme.ringPractice} />
+            <IconBadge icon={dailyToday ? CalendarCheck : GameIcon} color={dailyToday ? theme.success : theme.ringPractice} />
             <View style={{ flex: 1 }}>
-              <T v="heading">Daily challenge: quick quiz</T>
+              <T v="caption" color={dailyToday ? theme.success : theme.ringPractice}>
+                {dailyToday ? `DAILY CHALLENGE DONE · ${dailyToday.correct}/${dailyToday.total}` : 'DAILY CHALLENGE'}
+              </T>
+              <T v="heading">{game.title}</T>
               <T v="caption" muted>
-                5 questions · about 2 minutes · fills your Practice ring
+                {dailyToday ? 'Replay for practice. Same puzzle for everyone today.' : `${game.tagline} 5 rounds.`}
               </T>
             </View>
             <ChevronRight size={20} color={theme.textMuted} />
@@ -91,8 +130,36 @@ export default function Home() {
         </Card>
       </Appear>
 
+      {weakest && weakLesson ? (
+        <Appear index={i++}>
+          <Card onPress={() => router.push(`/quiz?lesson=${weakLesson.id}`)} accessibilityLabel={`Strengthen ${weakLesson.title}`}>
+            <Row>
+              <IconBadge icon={Target} color={theme.warning} />
+              <View style={{ flex: 1 }}>
+                <T v="caption" color={theme.warning}>
+                  WEAKEST TOPIC · MASTERY {weakest.score}%
+                </T>
+                <T v="heading">{weakLesson.title}</T>
+                <T v="caption" muted>
+                  Fix it in 5 minutes with a focused quiz
+                </T>
+              </View>
+              <ChevronRight size={20} color={theme.textMuted} />
+            </Row>
+            {support[0] ? (
+              <Pressable accessibilityRole="link" onPress={() => router.push(`/lesson/${support[0]!.id}`)} style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                <GraduationCap size={14} color={theme.accent} />
+                <T v="label" color={theme.accent}>
+                  Background first: {support[0].title} →
+                </T>
+              </Pressable>
+            ) : null}
+          </Card>
+        </Appear>
+      ) : null}
+
       {threat ? (
-        <Appear index={3}>
+        <Appear index={i++}>
           <Card
             onPress={() => (threat.lessonId ? router.push(`/lesson/${threat.lessonId}`) : router.push('/news'))}
             accessibilityLabel={`Threat of the day: ${threat.title}`}>
@@ -114,7 +181,7 @@ export default function Home() {
       ) : null}
 
       {interviewLesson ? (
-        <Appear index={4}>
+        <Appear index={i++}>
           <Card onPress={() => router.push(`/interview?focus=${interviewLesson.interview.id}`)} accessibilityLabel="Interview question of the day">
             <Row>
               <IconBadge icon={MessageSquareText} color={theme.info} />
@@ -129,7 +196,7 @@ export default function Home() {
         </Appear>
       ) : null}
 
-      <Appear index={5}>
+      <Appear index={i++}>
         <SectionTitle>This week</SectionTitle>
         <Card onPress={() => router.push('/me')} accessibilityLabel="Open progress report">
           <Row style={{ justifyContent: 'space-between' }}>
