@@ -4,6 +4,10 @@ An offline-first Android app with short daily lessons on AI security, GenAI/LLM 
 security. It includes quizzes, interview practice, threat briefings and progress reports based on your
 real study time.
 
+> **New here? Start with the [Owner's guide](docs/GUIDE.md):** how the pieces fit together (with diagrams),
+> how to run everything locally, who can do what in the admin panel, the weekly routine and the path to
+> Google Play. Build history: [docs/phases.md](docs/phases.md).
+
 ## Run it on your phone (fastest: Expo Go, no build needed)
 
 1. On your Android phone, install **Expo Go** from the Play Store.
