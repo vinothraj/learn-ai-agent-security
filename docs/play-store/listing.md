@@ -2,7 +2,9 @@
 
 Paste into Play Console → Grow → Store presence → Main store listing. Character limits are Google's.
 
-**App name (≤ 30):** `AI Agent Security: Learn & Lab` (30)
+**App name (≤ 30):** `Learn AI & Agent Security` (25). Matches the product name used in the app's privacy screen
+and the privacy policy. The label under the icon on the phone stays `AI Agent Security` (set in `apps/mobile/app.json`).
+The Play title can be changed later; only the app id `com.vinoth.aiagentsecurity` is permanent.
 
 **Short description (≤ 80):**
 `Learn AI, LLM & agent security in 5-minute lessons, safe labs and interview prep` (80)
