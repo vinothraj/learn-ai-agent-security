@@ -279,6 +279,7 @@ Data safety answers: [play-store/data-safety.md](play-store/data-safety.md).
 |---|---|
 | Phone can't load the app in Expo Go | Phone and laptop on the same Wi-Fi; mark the Wi-Fi as Private in Windows and allow Node.js through the firewall |
 | `npx` "running scripts is disabled" in PowerShell | Use `npx.cmd` instead of `npx` |
+| `eas login` fails with `ECONNRESET` or "unable to get local issuer certificate" (company network) | In that PowerShell window run `$env:NODE_USE_ENV_PROXY = '1'; $env:NODE_OPTIONS = '--use-system-ca'` first: Node then uses the company proxy and trusts the company certificate from Windows. Never disable certificate checks instead. |
 | `EADDRINUSE` when starting the API | Something already uses port 4000; stop the old API window |
 | News stays empty locally | The API needs internet; behind a company proxy, set `HTTPS_PROXY` before `npm run api` |
 | Can't publish my own draft | Four-eyes rule: ask another admin, or publish as super-admin |
