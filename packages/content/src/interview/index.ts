@@ -1,5 +1,6 @@
 import type { InterviewItem, Lesson, SkillArea } from '@laas/shared';
 import { bank } from './bank';
+import { bank2 } from './bank2';
 import { roles } from './roles';
 
 export { roles };
@@ -23,5 +24,5 @@ export function fromLessons(lessons: readonly Lesson[], skills: readonly SkillAr
 }
 
 export function interviewBank(lessons: readonly Lesson[], skills: readonly SkillArea[]): InterviewItem[] {
-  return [...bank, ...fromLessons(lessons, skills)];
+  return [...bank, ...bank2, ...fromLessons(lessons, skills)];
 }

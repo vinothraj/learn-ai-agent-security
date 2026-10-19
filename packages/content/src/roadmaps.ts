@@ -9,7 +9,7 @@ export const roadmaps: Roadmap[] = [
     description:
       'Threat modeling, trust boundaries, least privilege and risk assessment applied to AI-powered applications.',
     kind: 'security',
-    lessonIds: ['a-trust-boundaries', 'a-least-privilege'],
+    lessonIds: ['a-trust-boundaries', 'a-least-privilege', 'a-threat-modeling-llm', 'a-secure-ai-lifecycle', 'a-ai-risk-governance'],
   },
   {
     id: 'genai-llm-security',
@@ -24,6 +24,12 @@ export const roadmaps: Roadmap[] = [
       'b-indirect-prompt-injection',
       'b-sensitive-info-disclosure',
       'b-improper-output-handling',
+      'b-system-prompt-leakage',
+      'b-vector-embedding-weaknesses',
+      'b-data-poisoning',
+      'b-supply-chain',
+      'b-misinformation',
+      'b-unbounded-consumption',
     ],
   },
   {
@@ -34,7 +40,16 @@ export const roadmaps: Roadmap[] = [
     description:
       'How agents expand the attack surface through tools and autonomy, and how to constrain them safely.',
     kind: 'security',
-    lessonIds: ['c-excessive-agency', 'c-mcp-security', 'c-human-approval'],
+    lessonIds: [
+      'c-excessive-agency',
+      'c-mcp-security',
+      'c-human-approval',
+      'c-agent-identity',
+      'c-unsafe-tool-execution',
+      'c-memory-poisoning',
+      'c-agent-monitoring',
+      'c-multi-agent-trust',
+    ],
   },
   {
     id: 'ai-security-testing',
@@ -44,7 +59,7 @@ export const roadmaps: Roadmap[] = [
     description:
       'Test planning, test-case design, pass/fail criteria, severity scoring, evidence and reporting.',
     kind: 'security',
-    lessonIds: ['d-test-planning', 'd-severity-reporting'],
+    lessonIds: ['d-test-planning', 'd-test-case-design', 'd-severity-reporting', 'd-red-teaming', 'd-guardrail-evals'],
   },
   {
     id: 'interview-career',
@@ -52,9 +67,9 @@ export const roadmaps: Roadmap[] = [
     title: 'Interview & Career Prep',
     tagline: 'Practice answers that land.',
     description:
-      'Role-based preparation for AI security interviews. Full mock interviews arrive in a later release.',
+      'What AI security roles involve and how to explain your work. Pair with Practice → Interview prep for role plans and timed mock interviews.',
     kind: 'career',
-    lessonIds: [],
+    lessonIds: ['e-ai-security-roles', 'e-explaining-findings'],
   },
   {
     id: 'ai-fundamentals',
@@ -64,6 +79,6 @@ export const roadmaps: Roadmap[] = [
     description:
       'LLM basics, embeddings, RAG and tool calling. Recommended when a security topic needs the background.',
     kind: 'supporting',
-    lessonIds: ['f-llm-context', 'f-rag-basics'],
+    lessonIds: ['f-llm-context', 'f-ml-lifecycle', 'f-rag-basics', 'f-embeddings', 'f-tool-calling'],
   },
 ];

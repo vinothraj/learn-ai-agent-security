@@ -1,10 +1,17 @@
 import type { ContentPack, Flashcard, Game, InterviewItem, InterviewRole, Lab, Lesson } from '@laas/shared';
-import { flashcards } from './flashcards';
+import { flashcards as flashcards1 } from './flashcards';
+import { flashcards2 } from './flashcards2';
 import { games } from './games';
 import { interviewBank, roles } from './interview';
 export { fromLessons } from './interview';
 export * from './legal';
 import { agentLessons } from './lessons/agents';
+import { agentLessons2 } from './lessons/agents2';
+import { careerLessons } from './lessons/career';
+import { foundationsLessons2 } from './lessons/foundations2';
+import { fundamentalsLessons2 } from './lessons/fundamentals2';
+import { genaiLessons2 } from './lessons/genai2';
+import { testingLessons2 } from './lessons/testing2';
 import { foundationsLessons } from './lessons/foundations';
 import { fundamentalsLessons } from './lessons/fundamentals';
 import { genaiLessons } from './lessons/genai';
@@ -15,9 +22,22 @@ import { roadmaps } from './roadmaps';
 import { skills } from './skills';
 import { threats } from './threats';
 
-export const CONTENT_VERSION = '2026.10.3';
+export const CONTENT_VERSION = '2026.10.4';
 
-const lessons = [...foundationsLessons, ...genaiLessons, ...agentLessons, ...testingLessons, ...fundamentalsLessons];
+const lessons = [
+  ...foundationsLessons,
+  ...foundationsLessons2,
+  ...genaiLessons,
+  ...genaiLessons2,
+  ...agentLessons,
+  ...agentLessons2,
+  ...testingLessons,
+  ...testingLessons2,
+  ...careerLessons,
+  ...fundamentalsLessons,
+  ...fundamentalsLessons2,
+];
+const flashcards = [...flashcards1, ...flashcards2];
 
 export const contentPack: ContentPack = {
   version: CONTENT_VERSION,
