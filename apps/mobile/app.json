@@ -69,6 +69,12 @@
     ],
     "experiments": {
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "665a8c07-d677-4644-954d-c8ac2175451e"
+      }
+    },
+    "owner": "vinoth.v36"
   }
 }
