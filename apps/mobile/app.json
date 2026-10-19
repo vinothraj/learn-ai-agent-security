@@ -65,7 +65,8 @@
             }
           ]
         }
-      ]
+      ],
+      "./plugins/withWorkManagerVersion"
     ],
     "experiments": {
       "reactCompiler": true
