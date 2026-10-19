@@ -135,11 +135,27 @@ export const REFUSALS: Record<RefusalReason, string> = {
 };
 
 /** Shape the model must return; anything else is discarded and the fallback is used. */
-export const TutorAnswer = z.strictObject({
-  answer: z.string().min(1).max(2400),
-  citations: z.array(z.string()).max(3),
-  refused: z.boolean(),
-});
+/** A citation as models actually return it: an id string, or an object carrying the id. */
+const citationId = (c: unknown): string | null => {
+  if (typeof c === 'string') return c.replace(/^\[|\]$/g, '').trim();
+  if (c && typeof c === 'object') {
+    const o = c as Record<string, unknown>;
+    for (const k of ['lessonId', 'id', 'lesson']) if (typeof o[k] === 'string') return citationId(o[k]);
+  }
+  return null;
+};
+
+export const TutorAnswer = z
+  .object({
+    answer: z.string().trim().min(1).max(2400),
+    citations: z.array(z.unknown()).default([]),
+    refused: z.boolean().default(false),
+  })
+  .transform((a) => ({
+    answer: a.answer,
+    citations: a.citations.map(citationId).filter((c): c is string => !!c).slice(0, 3),
+    refused: a.refused,
+  }));
 export type TutorAnswer = z.infer<typeof TutorAnswer>;
 
 export interface TutorResponse {

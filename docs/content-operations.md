@@ -62,6 +62,23 @@ Free options:
   tiers may use prompts to improve their products, so use them only for public text such as news drafts,
   not for learner features like tutor answers or interview feedback.
 
+**Measured with Ollama `llama3.2` (3B) on this development laptop (CPU only), 2026-10-19:**
+
+| Task | Time | Quality |
+|---|---|---|
+| Weekly news draft | 20–60 s per article | Usable flashcards; questions sometimes have a wrong answer key or copy placeholder text. Automatic checks drop those, but facts still need a human check against the source. |
+| Tutor answer | about 110 s | Accurate when grounded in the lesson, but far too slow for learners |
+
+Recommendation: use Ollama on a laptop for **background drafts only** and leave the learner-facing
+tutor on lesson-based answers (AI off, or a fast hosted model). A larger model (e.g. 8B) improves quality
+if the machine has the memory; a GPU makes interactive use realistic.
+
+**Automatic quality checks on AI drafts** (deterministic, before anything reaches the review queue):
+each question and flashcard is validated on its own and invalid ones are dropped; placeholder options
+("A", "B"…) or the prompt's own example are rejected; a question is dropped when its explanation quotes a
+different option than the one marked correct; flashcards that repeat the front are dropped.
+`npx tsx scripts/try-news-pack.ts` (in `apps/api`) shows raw model output for prompt tuning.
+
 Turn on the `ai` flag (Feature flags) after configuring the provider. The `weekly_drafts` flag switches
 the Monday job off without touching other AI features.
 

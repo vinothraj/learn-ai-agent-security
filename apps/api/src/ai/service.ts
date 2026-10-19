@@ -86,6 +86,7 @@ export class AiService {
           maxTokens: opts.maxTokens,
           temperature: opts.temperature,
           signal: AbortSignal.timeout(this.limits.timeoutMs),
+          json: true, // every task expects a JSON object
         });
         await this.record(task, opts.userId, c.inputTokens, c.outputTokens);
         text = c.text;
@@ -102,7 +103,9 @@ export class AiService {
 
     const parsed = opts.schema.safeParse(extractJson(text));
     if (!parsed.success) {
-      this.log?.warn({ task, provider: this.provider.name }, 'AI output failed schema validation');
+      // Paths and codes only: model output can contain learner text, so it is never logged.
+      const issues = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.') || '(root)'}:${i.code}`);
+      this.log?.warn({ task, provider: this.provider.name, issues }, 'AI output failed schema validation');
       return { ok: false, reason: 'invalid_output' };
     }
     if (opts.cache !== false) {

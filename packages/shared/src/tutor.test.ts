@@ -50,3 +50,12 @@ describe('guardQuestion', () => {
     expect(a.answer).toContain(contentPack.lessons.find((l) => l.id === 'c-excessive-agency')!.explanation[0]);
   });
 });
+
+describe('TutorAnswer parsing', () => {
+  it('accepts citation shapes small models produce and drops junk', async () => {
+    const { TutorAnswer } = await import('./index');
+    const r = TutorAnswer.parse({ answer: ' Pin tools. ', citations: ['[c-mcp-security]', { lessonId: 'a-trust-boundaries' }, { title: 'x' }, 7], refused: false, extra: 1 });
+    expect(r).toEqual({ answer: 'Pin tools.', citations: ['c-mcp-security', 'a-trust-boundaries'], refused: false });
+    expect(TutorAnswer.safeParse({ citations: [] }).success).toBe(false); // an answer is required
+  });
+});

@@ -10,6 +10,8 @@ export interface CompletionRequest {
   maxTokens: number;
   temperature?: number;
   signal?: AbortSignal;
+  /** Ask the provider to return a JSON object (supported by Ollama and most OpenAI-compatible APIs). */
+  json?: boolean;
 }
 export interface Completion {
   text: string;
@@ -83,10 +85,16 @@ export function openAiCompatibleProvider(baseUrl: string, apiKey: string | undef
   return {
     name: 'openai-compatible',
     model,
-    async complete({ system, prompt, maxTokens, temperature = 0.2, signal }) {
+    async complete({ system, prompt, maxTokens, temperature = 0.2, signal, json }) {
       const r = await postJson<{ choices: { message: { content: string | null } }[]; usage?: { prompt_tokens: number; completion_tokens: number } }>(
         `${base}/chat/completions`,
-        { model, max_tokens: maxTokens, temperature, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] },
+        {
+          model,
+          max_tokens: maxTokens,
+          temperature,
+          ...(json ? { response_format: { type: 'json_object' } } : {}),
+          messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+        },
         headers,
         signal,
       );
@@ -107,10 +115,16 @@ export function ollamaProvider(baseUrl: string, model: string, embedModel?: stri
   return {
     name: 'ollama',
     model,
-    async complete({ system, prompt, maxTokens, temperature = 0.2, signal }) {
+    async complete({ system, prompt, maxTokens, temperature = 0.2, signal, json }) {
       const r = await postJson<{ message: { content: string }; prompt_eval_count?: number; eval_count?: number }>(
         `${base}/api/chat`,
-        { model, stream: false, options: { temperature, num_predict: maxTokens }, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] },
+        {
+          model,
+          stream: false,
+          ...(json ? { format: 'json' } : {}),
+          options: { temperature, num_predict: maxTokens },
+          messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+        },
         {},
         signal,
       );

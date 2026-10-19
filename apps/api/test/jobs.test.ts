@@ -127,3 +127,25 @@ describe('bulk import', () => {
     expect((await t.app.inject({ method: 'POST', url: '/v1/admin/content/import', headers: learner.headers, payload: { kind: 'flashcards', format: 'csv', data: good } })).statusCode).toBe(403);
   });
 });
+
+describe('news pack validation', () => {
+  it('drops placeholder or copied options and keeps valid flashcards', async () => {
+    const { NewsPack } = await import('../src/jobs');
+    const r = NewsPack.parse({
+      questions: [{ prompt: 'Which practice does the guidance recommend?', options: ['A', 'B', 'C', 'D'], correctIndex: 2, explanation: 'Because the article says so.' }],
+      flashcards: [{ front: 'What should be logged?', back: 'Model inputs and outputs, for incident response.' }, { front: 'Same text', back: 'same text' }],
+    });
+    expect(r.questions).toEqual([]);
+    expect(r.flashcards).toHaveLength(1);
+    expect(NewsPack.safeParse({ questions: [], flashcards: [] }).success).toBe(false);
+  });
+
+  it('drops questions whose answer key contradicts the explanation', async () => {
+    const { answerKeyConsistent } = await import('../src/jobs');
+    const options = ['Model weights', 'Model architecture', 'Model inputs and outputs', 'User interactions'];
+    const explanation = 'The guidance emphasizes logging model inputs and outputs to detect issues.';
+    expect(answerKeyConsistent({ options, correctIndex: 0, explanation })).toBe(false);
+    expect(answerKeyConsistent({ options, correctIndex: 2, explanation })).toBe(true);
+    expect(answerKeyConsistent({ options, correctIndex: 1, explanation: 'Architecture reviews matter most here.' })).toBe(true); // no contradiction found
+  });
+});

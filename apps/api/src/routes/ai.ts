@@ -11,6 +11,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AiService } from '../ai/service';
+import { answerKeyConsistent, copiedExample } from '../jobs';
 import { currentContent } from '../contentPack';
 import type { Db } from '../db';
 import { HttpError, parse, requireAuth, requireRole } from '../http';
@@ -52,12 +53,24 @@ const Feedback = z.strictObject({
   feedback: z.string().min(1).max(1200),
   confidence: z.enum(['low', 'medium', 'high']),
 });
-const GeneratedQuiz = z.strictObject({
-  questions: z
-    .array(z.strictObject({ prompt: z.string().min(10).max(300), options: z.array(z.string().min(1).max(200)).length(4), correctIndex: z.number().int().min(0).max(3), explanation: z.string().min(10).max(500) }))
-    .min(1)
-    .max(3),
-});
+const DraftQuestion = z
+  .object({
+    prompt: z.string().trim().min(10).max(300),
+    options: z.array(z.string().trim().min(2).max(200)).min(3).max(5),
+    correctIndex: z.number().int().min(0),
+    explanation: z.string().trim().min(10).max(500),
+  })
+  .refine((q) => q.correctIndex < q.options.length && new Set(q.options).size === q.options.length && !copiedExample(q.options) && answerKeyConsistent(q));
+/** Each question is validated on its own (small local models often get one wrong); at least one must survive. */
+const GeneratedQuiz = z
+  .object({ questions: z.array(z.unknown()) })
+  .transform((raw) => ({
+    questions: raw.questions.flatMap((q) => {
+      const r = DraftQuestion.safeParse(q);
+      return r.success ? [r.data] : [];
+    }).slice(0, 3),
+  }))
+  .refine((g) => g.questions.length > 0, { message: 'no valid questions' });
 const NewsSummary = z.strictObject({ summary: z.string().min(20).max(600) });
 
 export async function aiRoutes(app: FastifyInstance, { db, ai }: { db: Db; ai: AiService }) {

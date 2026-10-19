@@ -20,15 +20,17 @@ const proxyConfigured = () => !!(process.env.HTTPS_PROXY ?? process.env.https_pr
 export function isNonPublicAddress(ip: string): boolean {
   const v = isIP(ip);
   if (v === 4) {
-    const [a, b] = ip.split('.').map(Number) as [number, number];
+    const [a, b, c] = ip.split('.').map(Number) as [number, number, number];
     return (
       a === 0 || a === 10 || a === 127 || a >= 224 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
+      (a === 100 && b >= 64 && b <= 127) || // carrier-grade NAT
+      (a === 169 && b === 254) || // link-local, incl. cloud metadata
       (a === 172 && b >= 16 && b <= 31) ||
       (a === 192 && b === 168) ||
-      (a === 192 && b === 0) ||
-      (a === 198 && (b === 18 || b === 19))
+      (a === 192 && b === 0 && (c === 0 || c === 2)) || // IETF protocol assignments, TEST-NET-1 (not all of 192.0/16)
+      (a === 198 && (b === 18 || b === 19)) || // benchmarking
+      (a === 198 && b === 51 && c === 100) || // TEST-NET-2
+      (a === 203 && b === 0 && c === 113) // TEST-NET-3
     );
   }
   if (v === 6) {
