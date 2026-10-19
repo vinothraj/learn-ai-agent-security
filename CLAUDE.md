@@ -56,6 +56,12 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   policy + deletion text in `packages/content/src/legal.ts` (in-app `/privacy` and `npm run site` → GitHub Pages),
   store listing, Data safety answers, graphics and screenshots in docs/play-store/, step-by-step docs/release.md.
   Remaining is account work only (Play Console, EAS init, env vars, closed test). Set `LEGAL.contactEmail`.
+- **Content operations (2026.10.4): done.** 35 lessons (all roadmaps incl. E), 140 flashcards, 70 interview items.
+  Shared `contentOps.ts` (CSV parser, `parseImport`, `appendToPack`, `bumpVersion`). API 007: `news_pack` drafts
+  (`jobs.ts` `runNewsDrafts`, one per article via `source_ref`), `runDueIngestion`, `/v1/jobs/*` (JOB_TOKEN),
+  apply approved drafts and bulk import into content drafts (`contentDrafts.ts`). GitHub Actions
+  `content-jobs.yml` (every 3 h ingest, Monday drafts). Admin: bulk import, apply-to-draft, run-now buttons.
+  Guide: docs/content-operations.md.
 - **Next: Phase 13** (Pro + community), only when asked.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 

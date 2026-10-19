@@ -38,6 +38,8 @@ const EnvSchema = z.object({
   AI_DAILY_TOKEN_BUDGET: z.coerce.number().int().min(0).default(200_000),
   AI_USER_DAILY_REQUESTS: z.coerce.number().int().min(0).default(20),
   AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(20_000),
+  /** Shared secret for scheduled jobs (/v1/jobs/*), e.g. from GitHub Actions. Unset = job endpoints disabled. */
+  JOB_TOKEN: z.string().min(32).optional(),
   /** Server push via Expo. Off by default outside production; tests inject a fake sender. */
   PUSH: z.enum(['on', 'off']).default('off'),
   /** Optional Expo access token (enhanced push security). Server-side only. */

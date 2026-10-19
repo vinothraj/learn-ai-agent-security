@@ -1,6 +1,7 @@
 import { contentPack } from '@laas/content';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
+import { BulkImport } from '../components/BulkImport';
 import { Badge, Button, Card, Empty, ErrorNote, fmtDate, statusTone } from '../components/ui';
 import { api, ApiError, type Role } from '../lib/api';
 import { go } from '../lib/router';
@@ -77,6 +78,7 @@ export function ContentPage({ role }: { role: Role }) {
         </div>
       </header>
       <ErrorNote error={q.error ?? create.error} />
+      <BulkImport drafts={(q.data?.versions ?? []).filter((v) => v.status === 'draft' || v.status === 'rejected').map((v) => ({ id: v.id, label: v.label }))} />
       <Card>
         {q.data?.versions.length === 0 ? <Empty>No versions yet. Start a draft from the bundled content.</Empty> : null}
         <div className="overflow-x-auto">

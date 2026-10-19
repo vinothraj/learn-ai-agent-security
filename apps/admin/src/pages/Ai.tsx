@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Badge, Button, Card, Empty, ErrorNote, Field, fmtDate, inputCls, Stat } from '../components/ui';
 import { api, atLeast, type Role } from '../lib/api';
+import { go } from '../lib/router';
 
 interface Usage {
   provider: string;
@@ -12,7 +13,7 @@ interface Usage {
   byTask: { task: string; requests: number; tokens: number }[];
 }
 interface Question {
-  id: string;
+  id?: string;
   prompt: string;
   options: string[];
   correctIndex: number;
@@ -20,16 +21,28 @@ interface Question {
 }
 interface Suggestion {
   id: string;
-  kind: 'quiz';
+  kind: 'quiz' | 'news_pack';
   lesson_id: string;
-  payload: { questions: Question[] };
+  payload: { questions?: Question[]; flashcards?: { front: string; back: string }[]; articleTitle?: string; articleUrl?: string };
   status: 'pending' | 'approved' | 'rejected';
   provider: string;
   model: string;
   created_at: string;
   reviewed_at: string | null;
   note: string | null;
+  applied_version: string | null;
+  applied_at: string | null;
 }
+
+/** Approved drafts are collected into one content draft per session, then reviewed and published. */
+const TARGET_KEY = 'ai-target-draft';
+const readTarget = () => {
+  try {
+    return sessionStorage.getItem(TARGET_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
 
 const lessonTitle = new Map(contentPack.lessons.map((l) => [l.id, l.title]));
 const TABS = ['pending', 'approved', 'rejected'] as const;
@@ -37,27 +50,50 @@ const TABS = ['pending', 'approved', 'rejected'] as const;
 function SuggestionCard({ s, role }: { s: Suggestion; role: Role }) {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
-  const [copied, setCopied] = useState(false);
   const review = useMutation({
     mutationFn: (action: 'approve' | 'reject') => api(`/v1/admin/ai/suggestions/${s.id}/review`, { method: 'POST', body: { action, note } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ai-suggestions'] }),
   });
-  const copy = async () => {
-    await navigator.clipboard.writeText(JSON.stringify(s.payload.questions, null, 2));
-    setCopied(true);
-  };
+  const apply = useMutation({
+    mutationFn: () => {
+      const target = readTarget();
+      return api<{ versionId: string; added: { quiz: number; flashcards: number }; skipped: string[] }>(`/v1/admin/ai/suggestions/${s.id}/apply`, {
+        method: 'POST',
+        body: target ? { versionId: target } : {},
+      });
+    },
+    onSuccess: (r) => {
+      try {
+        sessionStorage.setItem(TARGET_KEY, r.versionId);
+      } catch {
+        // Without storage each apply starts its own draft; still correct.
+      }
+      qc.invalidateQueries({ queryKey: ['ai-suggestions'] });
+      qc.invalidateQueries({ queryKey: ['content'] });
+    },
+  });
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone="warn">AI-generated</Badge>
         <Badge tone="info">{lessonTitle.get(s.lesson_id) ?? s.lesson_id}</Badge>
+        {s.kind === 'news_pack' ? <Badge tone="muted">From news</Badge> : null}
         <span className="text-xs text-muted">
           {s.provider} · {s.model} · {fmtDate(s.created_at)}
         </span>
       </div>
+      {s.payload.articleTitle ? (
+        <p className="mt-2 text-sm">
+          Source:{' '}
+          <a className="text-accent hover:underline" href={s.payload.articleUrl} target="_blank" rel="noopener noreferrer">
+            {s.payload.articleTitle}
+          </a>{' '}
+          <span className="text-xs text-muted">(check the facts against it)</span>
+        </p>
+      ) : null}
       <ol className="mt-3 space-y-4">
-        {s.payload.questions.map((q) => (
-          <li key={q.id}>
+        {(s.payload.questions ?? []).map((q, qi) => (
+          <li key={q.id ?? qi}>
             <p className="font-semibold">{q.prompt}</p>
             <ul className="mt-1 space-y-0.5 text-sm">
               {q.options.map((o, i) => (
@@ -70,6 +106,18 @@ function SuggestionCard({ s, role }: { s: Suggestion; role: Role }) {
           </li>
         ))}
       </ol>
+      {s.payload.flashcards?.length ? (
+        <div className="mt-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted">Flashcards</div>
+          <ul className="mt-1 space-y-1 text-sm">
+            {s.payload.flashcards.map((c, i) => (
+              <li key={i}>
+                <span className="font-semibold">{c.front}</span> <span className="text-muted">→ {c.back}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="mt-4 flex flex-wrap items-end gap-2">
         {s.status === 'pending' && atLeast(role, 'admin') ? (
           <>
@@ -84,13 +132,19 @@ function SuggestionCard({ s, role }: { s: Suggestion; role: Role }) {
         ) : s.note ? (
           <p className="text-sm text-muted">Note: {s.note}</p>
         ) : null}
-        {s.status === 'approved' ? (
-          <Button kind="secondary" onClick={copy}>
-            {copied ? 'Copied' : 'Copy JSON for the content editor'}
+        {s.status === 'approved' && !s.applied_at && atLeast(role, 'editor') ? (
+          <Button disabled={apply.isPending} onClick={() => apply.mutate()}>
+            {apply.isPending ? 'Adding…' : 'Add to content draft'}
+          </Button>
+        ) : null}
+        {s.applied_version ? (
+          <Button kind="ghost" onClick={() => go(`content/${s.applied_version}`)}>
+            Added to a draft → review and submit
           </Button>
         ) : null}
       </div>
-      <ErrorNote error={review.error} />
+      {apply.data?.skipped.length ? <p className="mt-2 text-xs text-warn">Skipped: {apply.data.skipped.join('; ')}</p> : null}
+      <ErrorNote error={review.error ?? apply.error} />
     </Card>
   );
 }
@@ -104,6 +158,14 @@ export function AiPage({ role }: { role: Role }) {
   const list = useQuery({ queryKey: ['ai-suggestions', tab], queryFn: () => api<{ suggestions: Suggestion[] }>(`/v1/admin/ai/suggestions?status=${tab}`) });
   const gen = useMutation({
     mutationFn: () => api('/v1/admin/ai/quiz', { method: 'POST', body: { lessonId, count } }),
+    onSuccess: () => {
+      setTab('pending');
+      qc.invalidateQueries({ queryKey: ['ai-suggestions'] });
+      qc.invalidateQueries({ queryKey: ['ai-usage'] });
+    },
+  });
+  const weekly = useMutation({
+    mutationFn: () => api<{ considered: number; created: number; skipped: { reason: string }[]; disabled?: string }>('/v1/admin/jobs/news-drafts', { method: 'POST' }),
     onSuccess: () => {
       setTab('pending');
       qc.invalidateQueries({ queryKey: ['ai-suggestions'] });
@@ -131,6 +193,28 @@ export function AiPage({ role }: { role: Role }) {
           <Stat label="Requests today" value={u.today.requests} hint={u.byTask.map((t) => `${t.task}: ${t.requests}`).join(' · ') || 'None yet'} />
         </div>
       ) : null}
+
+      <Card title="Weekly drafts from news">
+        <p className="text-sm text-muted">
+          Turns the last 7 days of published news into a quiz question and flashcards for the linked lesson. Runs automatically every Monday through the
+          “Content jobs” workflow; run it now if you like. Approve what is accurate, then <strong>Add to content draft</strong>, review the draft and submit it.
+        </p>
+        {atLeast(role, 'admin') ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button kind="secondary" disabled={weekly.isPending} onClick={() => weekly.mutate()}>
+              {weekly.isPending ? 'Drafting…' : "Draft from this week's news"}
+            </Button>
+            {weekly.data ? (
+              <span className="text-sm">
+                {weekly.data.disabled
+                  ? `Not run: ${weekly.data.disabled}.`
+                  : `${weekly.data.created} new drafts from ${weekly.data.considered} articles${weekly.data.skipped.length ? `, ${weekly.data.skipped.length} skipped` : ''}.`}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        <ErrorNote error={weekly.error} />
+      </Card>
 
       <Card title="Draft quiz questions">
         <div className="grid gap-3 sm:grid-cols-[1fr_120px_auto] sm:items-end">

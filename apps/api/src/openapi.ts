@@ -90,6 +90,12 @@ export const openApiSpec = {
     '/v1/admin/ai/suggestions/{id}/review': { post: { summary: 'Approve or reject an AI draft (admin+, four-eyes, audited)', security: bearer, responses: ok('Reviewed') } },
     '/v1/admin/news/{id}/ai-summary': { post: { summary: 'Draft a news summary for the reviewer (not saved)', security: bearer, responses: ok('Draft') } },
     '/v1/admin/ai/usage': { get: { summary: 'AI provider, budget and usage today (admin)', security: bearer, responses: ok('Usage') } },
+    '/v1/jobs/ingest': { post: { summary: 'Scheduled job: ingest due news sources (Bearer JOB_TOKEN)', responses: ok('Run summary') } },
+    '/v1/jobs/news-drafts': { post: { summary: 'Scheduled job: AI drafts from recent published news into the review queue (Bearer JOB_TOKEN)', responses: ok('Run summary') } },
+    '/v1/admin/jobs/ingest': { post: { summary: 'Run news ingestion now (admin, audited)', security: bearer, responses: ok('Run summary') } },
+    '/v1/admin/jobs/news-drafts': { post: { summary: 'Generate news-based AI drafts now (admin, audited)', security: bearer, responses: ok('Run summary') } },
+    '/v1/admin/ai/suggestions/{id}/apply': { post: { summary: 'Add an approved AI draft to a content draft (editor+)', security: bearer, responses: ok('Draft version') } },
+    '/v1/admin/content/import': { post: { summary: 'Bulk import flashcards, quiz questions or interview items (CSV/JSON) into a draft (editor+)', security: bearer, responses: ok('Import summary') } },
     '/v1/admin/audit': { get: { summary: 'Audit log (super-admin)', security: bearer, responses: ok('Entries') } },
   },
 };

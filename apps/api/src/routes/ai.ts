@@ -140,7 +140,7 @@ export async function aiRoutes(app: FastifyInstance, { db, ai }: { db: Db; ai: A
   app.get('/v1/admin/ai/suggestions', { preHandler: requireRole('editor') }, async (req) => {
     const { status } = parse(z.object({ status: z.enum(['pending', 'approved', 'rejected']).default('pending') }), req.query);
     const { rows } = await db.query(
-      `SELECT id, kind, lesson_id, payload, status, provider, model, created_by, created_at, reviewed_by, reviewed_at, note
+      `SELECT id, kind, lesson_id, payload, status, provider, model, created_by, created_at, reviewed_by, reviewed_at, note, applied_version, applied_at
        FROM ai_suggestions WHERE status = $1 ORDER BY created_at DESC LIMIT 100`,
       [status],
     );

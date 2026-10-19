@@ -70,6 +70,7 @@ against Postgres with `TEST_DATABASE_URL=postgres://laas:laas@localhost:5432/laa
    | `CORS_ORIGINS` | admin panel origin(s), comma-separated |
    | `SUPER_ADMIN_EMAILS` | your email (bootstraps the first super-admin) |
    | `ANALYTICS_SALT` | random secret (32+ chars) for pseudonymous analytics ids |
+   | `JOB_TOKEN` | random secret (32+ chars) for scheduled jobs called by GitHub Actions; unset disables `/v1/jobs/*` |
    | `PUSH` | `on` to send push notifications through Expo (default `off`) |
    | `EXPO_ACCESS_TOKEN` | optional, if "enhanced push security" is enabled in your Expo account |
 
@@ -107,6 +108,10 @@ recommended once real users depend on sync.
 | POST | `/v1/admin/ai/suggestions/:id/review` | admin+ (four-eyes, audited) |
 | POST | `/v1/admin/news/:id/ai-summary` | admin+ (draft only, not saved) |
 | GET | `/v1/admin/ai/usage` | admin+ |
+| POST | `/v1/jobs/ingest`, `/v1/jobs/news-drafts` | `Authorization: Bearer $JOB_TOKEN` (scheduled jobs) |
+| POST | `/v1/admin/jobs/ingest`, `/v1/admin/jobs/news-drafts` | admin+ (run now, audited) |
+| POST | `/v1/admin/ai/suggestions/:id/apply` | editor+ (approved drafts only → content draft) |
+| POST | `/v1/admin/content/import` | editor+ (CSV/JSON bulk import → content draft) |
 
 Example:
 
@@ -242,3 +247,5 @@ when both are on.
 deterministically before any model call. Lesson text, questions, answers and article text are passed
 inside delimiters and declared as data. Output must match a JSON schema or it is discarded. Responses
 are cached for 7 days (except interview answers). Provider error messages never include response bodies.
+
+See **docs/content-operations.md** for the weekly content routine, bulk import and free scheduling.

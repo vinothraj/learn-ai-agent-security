@@ -4,7 +4,7 @@ import type { z } from 'zod';
 import type { Db } from '../db';
 import { extractJson, ProviderError, type AIProvider } from './providers';
 
-export type AiTask = 'tutor' | 'interview_feedback' | 'quiz_generation' | 'news_summary';
+export type AiTask = 'tutor' | 'interview_feedback' | 'quiz_generation' | 'news_summary' | 'news_pack';
 
 export interface AiLimits {
   /** Total tokens (input + output) per UTC day across all users. */

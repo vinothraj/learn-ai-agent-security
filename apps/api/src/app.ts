@@ -17,6 +17,7 @@ import { adminRoutes } from './routes/admin';
 import { analyticsRoutes } from './routes/analytics';
 import { contentRoutes } from './routes/content';
 import { deviceRoutes } from './routes/devices';
+import { jobRoutes } from './routes/jobs';
 import { newsRoutes } from './routes/news';
 import { syncRoutes } from './routes/sync';
 import { systemRoutes } from './routes/system';
@@ -24,7 +25,7 @@ import { expoPushSender, type PushSender } from './push';
 import { upsertUser } from './services';
 
 const PUBLIC_PATHS = new Set(['/health', '/ready', '/v1/config', '/v1/news', '/v1/content/manifest', '/dev/token']);
-const PUBLIC_PREFIXES = ['/docs', '/v1/content/packs/'];
+const PUBLIC_PREFIXES = ['/docs', '/v1/content/packs/', '/v1/jobs/'];
 
 export async function buildApp({
   config,
@@ -118,5 +119,6 @@ export async function buildApp({
   await app.register(deviceRoutes, { db });
   await app.register(analyticsRoutes, { db, config });
   await app.register(aiRoutes, { db, ai });
+  await app.register(jobRoutes, { db, config, ai });
   return app;
 }

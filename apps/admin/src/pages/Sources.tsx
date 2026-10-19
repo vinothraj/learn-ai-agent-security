@@ -96,6 +96,10 @@ export function SourcesPage() {
     mutationFn: (s: Source) => api(`/v1/admin/news-sources/${s.id}/run`, { method: 'POST' }),
     onSettled: () => qc.invalidateQueries(),
   });
+  const runDue = useMutation({
+    mutationFn: () => api<{ sources: number; inserted: number; errors: number }>('/v1/admin/jobs/ingest', { method: 'POST' }),
+    onSettled: () => qc.invalidateQueries(),
+  });
 
   return (
     <div className="space-y-6">
@@ -103,6 +107,23 @@ export function SourcesPage() {
         <h1 className="text-2xl font-extrabold">Sources &amp; ingestion</h1>
         <p className="text-sm text-muted">Feeds are fetched over HTTPS with size, time and rate limits. Article text is treated as untrusted data.</p>
       </header>
+      <Card title="Automatic fetching">
+        <p className="text-sm text-muted">
+          The server fetches due feeds on its own schedule. On free hosting that sleeps, the GitHub Actions workflow “Content jobs” calls the API every 3 hours
+          (see docs/content-operations.md).
+        </p>
+        <div className="mt-3 flex items-center gap-3">
+          <Button kind="secondary" disabled={runDue.isPending} onClick={() => runDue.mutate()}>
+            {runDue.isPending ? 'Fetching…' : 'Fetch all due feeds now'}
+          </Button>
+          {runDue.data ? (
+            <span className="text-sm">
+              {runDue.data.sources} feeds checked, {runDue.data.inserted} new items{runDue.data.errors ? `, ${runDue.data.errors} errors` : ''}.
+            </span>
+          ) : null}
+        </div>
+        <ErrorNote error={runDue.error} />
+      </Card>
       <Card title="Sources">
         <ErrorNote error={sources.error ?? toggle.error ?? run.error} />
         <div className="overflow-x-auto">

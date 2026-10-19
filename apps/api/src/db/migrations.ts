@@ -274,6 +274,20 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       UPDATE feature_flags SET description = 'Optional AI features (needs AI_PROVIDER on the server)' WHERE key = 'ai';
     `,
   },
+  {
+    id: '007_content_jobs',
+    sql: `
+      -- Weekly news-based drafts and one-click "apply to a content draft".
+      ALTER TABLE ai_suggestions DROP CONSTRAINT ai_suggestions_kind_check;
+      ALTER TABLE ai_suggestions ADD CONSTRAINT ai_suggestions_kind_check CHECK (kind IN ('quiz', 'news_pack'));
+      ALTER TABLE ai_suggestions ADD COLUMN source_ref text;
+      ALTER TABLE ai_suggestions ADD COLUMN applied_version uuid REFERENCES content_versions(id) ON DELETE SET NULL;
+      ALTER TABLE ai_suggestions ADD COLUMN applied_at timestamptz;
+      CREATE UNIQUE INDEX ux_ai_suggestions_source ON ai_suggestions(kind, source_ref) WHERE source_ref IS NOT NULL;
+      INSERT INTO feature_flags (key, enabled, description) VALUES ('weekly_drafts', true, 'Weekly AI drafts from published news (needs AI)')
+        ON CONFLICT (key) DO NOTHING;
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

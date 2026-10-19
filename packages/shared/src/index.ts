@@ -19,3 +19,4 @@ export * from './packCheck';
 export * from './notifications';
 export * from './analytics';
 export * from './tutor';
+export * from './contentOps';

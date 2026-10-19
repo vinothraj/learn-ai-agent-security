@@ -1,0 +1,51 @@
+name: Content jobs (news ingestion and weekly AI drafts)
+
+# Free scheduler: GitHub Actions calls the API's job endpoints. This also wakes free hosting tiers
+# that sleep when idle (their built-in timers stop while asleep).
+# Setup: repository secrets API_URL (e.g. https://api.example.com) and JOB_TOKEN (same value as the
+# API's JOB_TOKEN, 32+ random characters). Without them the jobs skip.
+
+on:
+  schedule:
+    - cron: '17 */3 * * *' # every 3 hours: fetch due news feeds
+    - cron: '30 5 * * 1' # Mondays 05:30 UTC: AI drafts from last week's published news
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        type: choice
+        options: [ingest, news-drafts]
+        default: ingest
+
+permissions: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Pick the job
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "job=${{ inputs.job }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "30 5 * * 1" ]; then
+            echo "job=news-drafts" >> "$GITHUB_OUTPUT"
+          else
+            echo "job=ingest" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Call the API
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          JOB_TOKEN: ${{ secrets.JOB_TOKEN }}
+          JOB: ${{ steps.pick.outputs.job }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$JOB_TOKEN" ]; then
+            echo "API_URL or JOB_TOKEN secret is not set; skipping."
+            exit 0
+          fi
+          # Wake a sleeping host first (cold starts can take ~30-60 s on free tiers).
+          curl --silent --show-error --retry 6 --retry-delay 10 --retry-all-errors --max-time 60 "$API_URL/health" > /dev/null
+          curl --fail-with-body --silent --show-error --retry 2 --retry-delay 15 --max-time 120 \
+            -X POST -H "Authorization: Bearer $JOB_TOKEN" "$API_URL/v1/jobs/$JOB"
+          echo
