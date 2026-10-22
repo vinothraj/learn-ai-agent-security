@@ -62,6 +62,10 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   apply approved drafts and bulk import into content drafts (`contentDrafts.ts`). GitHub Actions
   `content-jobs.yml` (every 3 h ingest, Monday drafts). Admin: bulk import, apply-to-draft, run-now buttons.
   Guide: docs/content-operations.md.
+- **Release status (2026-10-22):** EAS project `@vinoth.v36/learn-ai-agent-security`; Play app created
+  (`com.vinoth.aiagentsecurity`, title "Learn AI & Agent Security"); internal testing build **3 (1.0.0)** live and
+  confirmed opening on a real phone (build 2 crashed, deactivated). Builds are offline-only (no EAS env vars yet).
+  Remaining: Play setup forms, privacy URL (needs GitHub Pages on + `LEGAL.contactEmail`), closed test 12+ testers/14 days.
 - **Next: Phase 13** (Pro + community), only when asked.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
@@ -141,4 +145,8 @@ From `apps/mobile`: `npx expo install <pkg>` (always use this to add Expo/RN pac
   (lazy `require`, guarded by `TurboModuleRegistry.get('AndroidWidget')`). App entry is `apps/mobile/index.ts`.
 - Verify config plugins with `npx expo prebuild --platform android --no-install --clean`, then delete
   `android/` and revert the `package.json` script change prebuild makes.
+- Release builds: `plugins/withWorkManagerVersion.js` forces androidx.work 2.11.2. Without it the widget library's
+  WorkManager 2.8.1 meets Room 2.7+ and the app crashes at launch (`WorkDatabase` instance error). Keep it until
+  react-native-android-widget ships a compatible WorkManager. Debug/Expo Go never shows this; test release APKs.
+- EAS on the corporate network: `$env:NODE_USE_ENV_PROXY='1'; $env:NODE_OPTIONS='--use-system-ca'` and `npx.cmd`.
 - The web preview (`metro.config.js` headers, `.claude/launch.json`) is for UI checks only; Android is the target.
