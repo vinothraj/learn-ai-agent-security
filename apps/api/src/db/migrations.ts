@@ -288,6 +288,31 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
         ON CONFLICT (key) DO NOTHING;
     `,
   },
+  {
+    id: '008_row_level_security',
+    sql: `
+      -- Supabase publishes the public schema through its REST API to anyone with the (public) app key.
+      -- The API server is the only intended client: enable RLS with no policies so REST and Realtime
+      -- see nothing, while the API (table owner) is unaffected. Harmless on plain Postgres and PGlite.
+      ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE sync_records ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE news_sources ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE news_articles ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ingestion_runs ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE content_versions ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE devices ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ai_cache ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ai_suggestions ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE schema_migrations ENABLE ROW LEVEL SECURITY;
+      ALTER FUNCTION audit_logs_immutable() SET search_path = '';
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {

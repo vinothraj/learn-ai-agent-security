@@ -13,8 +13,25 @@ export interface Db {
   close(): Promise<void>;
 }
 
-export function pgDb(connectionString: string): Db {
-  const pool = new pg.Pool({ connectionString, max: 10 });
+/**
+ * TLS for the Postgres connection. 'require' encrypts without verifying the server certificate;
+ * 'verify' also checks it against `ca` (e.g. the Supabase CA from Database settings). Don't also put
+ * `sslmode` in the URL: node-postgres would apply its own interpretation.
+ */
+export interface DbSsl {
+  mode: 'off' | 'require' | 'verify';
+  ca?: string;
+}
+
+export function sslOptions(ssl: DbSsl): pg.PoolConfig['ssl'] {
+  if (ssl.mode === 'off') return undefined;
+  if (ssl.mode === 'require') return { rejectUnauthorized: false };
+  if (!ssl.ca) throw new Error('DATABASE_SSL=verify needs DATABASE_CA_CERT (PEM)');
+  return { rejectUnauthorized: true, ca: ssl.ca };
+}
+
+export function pgDb(connectionString: string, ssl: DbSsl = { mode: 'off' }): Db {
+  const pool = new pg.Pool({ connectionString, max: 10, ssl: sslOptions(ssl) });
   const wrap = (client: pg.PoolClient | pg.Pool): Db => ({
     query: async <T>(sql: string, params: unknown[] = []) => ({ rows: (await client.query(sql, params)).rows as T[] }),
     transaction: async (fn) => {

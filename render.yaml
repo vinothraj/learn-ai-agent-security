@@ -1,0 +1,69 @@
+# Render Blueprint: the API server and the admin panel, both on free plans.
+# Render → New → Blueprint → pick this repository. Render asks for every `sync: false` value once.
+# Data lives in Supabase (Postgres + Auth); see docs/deploy-render-supabase.md.
+
+services:
+  # ---- API server (Fastify) ----
+  - type: web
+    name: laas-api
+    runtime: node
+    plan: free
+    region: singapore # closest Render region to the Supabase project in Mumbai (ap-south-1)
+    buildCommand: npm ci
+    startCommand: npm run start --workspace apps/api
+    healthCheckPath: /ready
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_MODE
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://ixyhgyynfphoygzxttja.supabase.co
+      - key: DATABASE_SSL
+        value: require
+      - key: NEWS_INGESTION
+        value: "on"
+      # Secrets: entered in the Render dashboard, never committed.
+      - key: DATABASE_URL # Supabase → Connect → Session pooler (port 5432), with your database password
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY # Supabase → Project Settings → API Keys → secret key (lets account deletion remove the login too)
+        sync: false
+      - key: SUPER_ADMIN_EMAILS # your email: becomes super-admin on first sign-in
+        sync: false
+      - key: CORS_ORIGINS # the admin panel address, e.g. https://laas-admin.onrender.com
+        sync: false
+      - key: ANALYTICS_SALT
+        generateValue: true
+      - key: JOB_TOKEN # copy this into the GitHub secret JOB_TOKEN for the Content jobs workflow
+        generateValue: true
+
+  # ---- Admin panel (static site) ----
+  - type: web
+    name: laas-admin
+    runtime: static
+    buildCommand: npm ci && npm run build --workspace apps/admin
+    staticPublishPath: ./apps/admin/dist
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_AUTH_MODE
+        value: supabase
+      - key: VITE_SUPABASE_URL
+        value: https://ixyhgyynfphoygzxttja.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY # publishable key: public by design
+        value: sb_publishable_mhDYOuTG7MKD6NC54z96zA_f640YiOO
+      - key: VITE_API_URL # the API address, e.g. https://laas-api.onrender.com
+        sync: false

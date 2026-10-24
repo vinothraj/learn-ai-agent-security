@@ -233,3 +233,16 @@ describe('configuration safety', () => {
     expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:8081');
   });
 });
+
+describe('database TLS options', () => {
+  it('encrypts by default in production and verifies only with a CA', async () => {
+    const { sslOptions } = await import('../src/db');
+    const prod = loadConfig({ NODE_ENV: 'production', AUTH_MODE: 'supabase', SUPABASE_URL: 'https://x.supabase.co', DATABASE_URL: 'postgres://x', CORS_ORIGINS: 'https://a.example', ANALYTICS_SALT: 'a-real-random-secret-of-at-least-32-chars' });
+    expect(prod.DATABASE_SSL).toBe('require');
+    expect(loadConfig({ NODE_ENV: 'test' }).DATABASE_SSL).toBe('off');
+    expect(sslOptions({ mode: 'require' })).toEqual({ rejectUnauthorized: false });
+    expect(sslOptions({ mode: 'verify', ca: 'PEM' })).toEqual({ rejectUnauthorized: true, ca: 'PEM' });
+    expect(() => sslOptions({ mode: 'verify' })).toThrow(/DATABASE_CA_CERT/);
+    expect(sslOptions({ mode: 'off' })).toBeUndefined();
+  });
+});

@@ -11,6 +11,10 @@ const EnvSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   /** Postgres connection string. When empty (development only), an embedded PGlite database is used. */
   DATABASE_URL: z.string().default(''),
+  /** Postgres TLS: off (local), require (encrypted, default in production), verify (also checks the CA). */
+  DATABASE_SSL: z.enum(['off', 'require', 'verify']).optional(),
+  /** PEM certificate for DATABASE_SSL=verify (Supabase: Database settings → SSL configuration). */
+  DATABASE_CA_CERT: z.string().optional(),
   /** Directory for the embedded PGlite database; "memory" keeps it in RAM. */
   PGLITE_DIR: z.string().default('.data/pglite'),
   /** "supabase" verifies Supabase Auth JWTs; "dev" mints local test tokens (never in production). */
@@ -52,6 +56,7 @@ export type Config = z.infer<typeof EnvSchema>;
 /** Parses the environment and refuses unsafe production configurations. */
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
   const c = EnvSchema.parse(env);
+  c.DATABASE_SSL ??= c.NODE_ENV === 'production' ? 'require' : 'off';
   if (c.NODE_ENV === 'production') {
     const problems: string[] = [];
     if (c.AUTH_MODE !== 'supabase') problems.push('AUTH_MODE must be "supabase" in production');

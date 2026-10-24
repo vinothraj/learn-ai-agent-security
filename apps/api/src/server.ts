@@ -7,7 +7,7 @@ import { startNewsScheduler } from './news/ingest';
 
 const config = loadConfig();
 const proxied = configureOutboundProxy();
-const db = config.DATABASE_URL ? pgDb(config.DATABASE_URL) : await pgliteDb(config.PGLITE_DIR);
+const db = config.DATABASE_URL ? pgDb(config.DATABASE_URL, { mode: config.DATABASE_SSL ?? 'off', ca: config.DATABASE_CA_CERT }) : await pgliteDb(config.PGLITE_DIR);
 const applied = await migrate(db);
 const app = await buildApp({ config, db });
 if (applied.length) app.log.info({ applied }, 'migrations applied');
