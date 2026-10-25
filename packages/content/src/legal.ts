@@ -111,4 +111,11 @@ export const DELETE_ACCOUNT: LegalSection[] = [
       'Using the app without an account? Your data exists only on your phone: uninstalling the app deletes it.',
     ],
   },
+  {
+    title: 'Delete some of your data and keep your account',
+    paragraphs: [
+      `Usage statistics: in ${LEGAL.appName}, open Settings and turn off “Share anonymous usage statistics”. Every statistic we hold for your account is deleted from our database immediately and from backups within 30 days. Your account and progress stay.`,
+      `Anything else (for example your display name or specific synced progress): email ${LEGAL.contactEmail} from the address you signed in with and say what to delete. We will confirm within 30 days. Data you don’t name is kept until you delete your account.`,
+    ],
+  },
 ];
