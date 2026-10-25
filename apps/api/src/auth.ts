@@ -8,6 +8,8 @@ export const roleRank = (r: Role) => ROLES.indexOf(r);
 export interface Identity {
   id: string;
   email: string | null;
+  /** Name from the sign-in provider (Supabase `user_metadata`, e.g. Google); used only to fill an empty display name. */
+  name?: string;
 }
 
 export type Verifier = (token: string) => Promise<Identity>;
@@ -20,7 +22,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function identityFrom(payload: JWTPayload): Identity {
   if (typeof payload.sub !== 'string' || !UUID.test(payload.sub)) throw new Error('token subject must be a UUID');
   const email = typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
-  return { id: payload.sub.toLowerCase(), email };
+  const meta = (payload.user_metadata ?? {}) as { full_name?: unknown; name?: unknown };
+  const raw = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
+  const name = raw.replace(/\p{C}/gu, '').trim().slice(0, 40);
+  return { id: payload.sub.toLowerCase(), email, ...(name ? { name } : {}) };
 }
 
 /**

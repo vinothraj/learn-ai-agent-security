@@ -32,13 +32,17 @@ export async function audit(
   ]);
 }
 
-/** Creates the user on first sign-in, refreshes email/last-seen, and applies bootstrap super-admins. */
+/**
+ * Creates the user on first sign-in, refreshes email/last-seen, fills an empty display name from the sign-in
+ * provider (never overwrites one the user chose), and applies bootstrap super-admins.
+ */
 export async function upsertUser(db: Db, identity: Identity, superAdminEmails: readonly string[]): Promise<UserRow> {
   const { rows } = await db.query<UserRow>(
-    `INSERT INTO users (id, email) VALUES ($1, $2)
-     ON CONFLICT (id) DO UPDATE SET email = COALESCE(EXCLUDED.email, users.email), last_seen_at = now()
+    `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $3)
+     ON CONFLICT (id) DO UPDATE SET email = COALESCE(EXCLUDED.email, users.email), last_seen_at = now(),
+       display_name = CASE WHEN users.display_name = '' THEN EXCLUDED.display_name ELSE users.display_name END
      RETURNING id, email, display_name, role, org_id, created_at, last_seen_at`,
-    [identity.id, identity.email],
+    [identity.id, identity.email, identity.name ?? ''],
   );
   let user = rows[0]!;
   const bootstrap = identity.email && superAdminEmails.map((e) => e.toLowerCase()).includes(identity.email);
