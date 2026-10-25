@@ -68,8 +68,8 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   Remaining: Play setup forms, privacy URL (needs GitHub Pages on + `LEGAL.contactEmail`), closed test 12+ testers/14 days.
 - **Backend live (2026-10-25):** Supabase `ixyhgyynfphoygzxttja` (Mumbai, migrations through 009, RLS on, no policies);
   Render API `https://laas-api-q5t1.onrender.com`, admin `https://laas-admin.onrender.com` (render.yaml blueprint).
-  EAS production/preview env vars point at them from build 4. Learner email sign-in needs custom SMTP or Google
-  sign-in first (default Supabase mail is link-only and team-only); the admin panel accepts the link.
+  EAS production/preview env vars point at them from build 4. Email sign-in uses Brevo SMTP with 6-digit codes
+  (key expires 2027-10-25 or after 90 idle days); the admin panel also accepts sign-in links.
 - **Next: Phase 13** (Pro + community), only when asked.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 

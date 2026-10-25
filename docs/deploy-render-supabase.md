@@ -28,7 +28,15 @@ Project **Learn AI and Agent Security** (`ixyhgyynfphoygzxttja`, Mumbai):
 New migrations are applied by the API on start-up. To apply them by hand instead,
 `npx tsx scripts/dump-migrations.ts out.json` (in `apps/api`) prints the exact SQL.
 
-### Sign-in emails (action needed before real users)
+### Sign-in emails
+
+**Done (2026-10-25):** custom SMTP via Brevo (free, 300/day): host `smtp-relay.brevo.com`, port 587, sender
+`Learn AI & Agent Security`. Magic link and Confirm signup templates show `{{ .Token }}`; OTP length 6; Supabase
+raised the email limit to 30/hour. **The Brevo SMTP key expires 2027-10-25, or after 90 days with no email
+sent**: generate a new one in Brevo (SMTP & API) and paste it into Supabase SMTP settings before then. Use a
+sender on your own (authenticated) domain before public launch; a gmail.com sender is more likely to hit spam.
+
+Background:
 
 Supabase's built-in email sender **only delivers to members of your Supabase organisation** and has a
 low hourly limit; it's for testing. Before launch, either:
