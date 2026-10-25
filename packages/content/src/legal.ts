@@ -6,9 +6,9 @@
 
 export const LEGAL = {
   appName: 'Learn AI & Agent Security',
-  /** Replace before publishing: a monitored address for privacy requests. */
-  contactEmail: 'REPLACE_WITH_CONTACT_EMAIL',
-  effectiveDate: '2026-10-18',
+  /** Monitored address for privacy and deletion requests (also the Play listing contact). */
+  contactEmail: 'learnaiagentsecurity@gmail.com',
+  effectiveDate: '2026-10-25',
 };
 
 export interface LegalSection {
