@@ -43,6 +43,7 @@ export function setSession(s: Session | null) {
  * the address bar before the hash router runs. Returns an error message if the link was rejected.
  */
 function consumeMagicLink(): string | null {
+  if (typeof location === 'undefined') return null;
   const params = new URLSearchParams(location.hash.slice(1));
   const token = params.get('access_token');
   const error = params.get('error_description') ?? params.get('error');
