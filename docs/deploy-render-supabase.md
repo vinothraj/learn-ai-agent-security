@@ -40,6 +40,9 @@ Also check **Authentication → Emails → Magic link** contains `{{ .Token }}`:
 
 ## 2. Render (one-time, about 15 minutes)
 
+**Live (2026-10-25):** API `https://laas-api-q5t1.onrender.com` (Render added the `-q5t1` suffix because
+`laas-api` was taken), admin panel `https://laas-admin.onrender.com`.
+
 1. Sign in at https://render.com with GitHub and allow access to `learn-ai-agent-security`.
 2. **New → Blueprint** → choose the repository. Render reads `render.yaml` and proposes two services:
    **laas-api** and **laas-admin**.
@@ -54,8 +57,12 @@ Also check **Authentication → Emails → Magic link** contains `{{ .Token }}`:
 | `VITE_API_URL` | laas-admin | `https://laas-api.onrender.com` (adjust likewise) |
 
 4. **Apply**. The first build takes a few minutes. Check `https://laas-api.onrender.com/ready` → `{"status":"ready"}`.
-5. Open the admin panel, sign in with your email code (you are a team member, so it arrives), and you
-   become super-admin.
+5. Supabase → Authentication → **URL Configuration** → Site URL = the admin panel address.
+6. Supabase → Authentication → **Users** → **Add user** → your email, *Auto Confirm User* ticked. The
+   admin panel never creates accounts (`create_user: false`), so staff must exist first.
+7. Open the admin panel and request a sign-in email. Without custom SMTP the email holds a **link**
+   (templates can't be edited); click it in the same browser. With custom SMTP, add `{{ .Token }}` to the
+   Magic Link template and the 6-digit code works too. On first sign-in you become super-admin.
 
 **Free tier behaviour:** the API sleeps after about 15 minutes without requests; the next request
 waits roughly a minute while it wakes. Fine for testing; use a paid instance once learners rely on it.
@@ -67,10 +74,10 @@ configuration, set `DATABASE_CA_CERT` to its contents and `DATABASE_SSL=verify`.
 
 ## 3. Point the app at the live backend
 
-Set the build variables for the **production** (and **preview**) EAS environment, then build:
+Set (done 2026-10-25, first used by build 4) for the **production** and **preview** EAS environments:
 
 ```
-EXPO_PUBLIC_API_URL=https://laas-api.onrender.com
+EXPO_PUBLIC_API_URL=https://laas-api-q5t1.onrender.com
 EXPO_PUBLIC_AUTH_MODE=supabase
 EXPO_PUBLIC_SUPABASE_URL=https://ixyhgyynfphoygzxttja.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=<publishable key>
@@ -78,3 +85,8 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=<publishable key>
 
 Before releasing that build on Play, update **Data safety** (accounts, synced progress) as described in
 [play-store/data-safety.md](play-store/data-safety.md).
+
+Learner sign-in in the app expects the 6-digit code, and Supabase's built-in sender only mails members of
+your Supabase organisation. Before inviting learners, connect custom SMTP and add `{{ .Token }}` to the
+**Magic link** and **Confirm signup** templates, or ship Google sign-in. Until then the app works fully
+offline and shows live news and over-the-air content without an account.

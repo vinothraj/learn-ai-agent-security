@@ -66,6 +66,10 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   (`com.vinoth.aiagentsecurity`, title "Learn AI & Agent Security"); internal testing build **3 (1.0.0)** live and
   confirmed opening on a real phone (build 2 crashed, deactivated). Builds are offline-only (no EAS env vars yet).
   Remaining: Play setup forms, privacy URL (needs GitHub Pages on + `LEGAL.contactEmail`), closed test 12+ testers/14 days.
+- **Backend live (2026-10-25):** Supabase `ixyhgyynfphoygzxttja` (Mumbai, migrations through 009, RLS on, no policies);
+  Render API `https://laas-api-q5t1.onrender.com`, admin `https://laas-admin.onrender.com` (render.yaml blueprint).
+  EAS production/preview env vars point at them from build 4. Learner email sign-in needs custom SMTP or Google
+  sign-in first (default Supabase mail is link-only and team-only); the admin panel accepts the link.
 - **Next: Phase 13** (Pro + community), only when asked.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
