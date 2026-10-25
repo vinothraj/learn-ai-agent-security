@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 import type { SyncResponse } from '@laas/shared';
 
 import { resetAllProgress } from '@/db/repo';
-import { api, ApiError, cloud, cloudConfigured, devSignIn, freshSession, loadSession, requestCode, saveSession, verifyCode, type Session } from '@/sync/auth';
+import { api, ApiError, cloud, cloudConfigured, devSignIn, freshSession, googleSignIn, loadSession, requestCode, saveSession, verifyCode, type Session } from '@/sync/auth';
 import { uploadAnalytics } from '@/sync/analytics';
 import { enqueueAll, lastSyncAt as readLastSync, resetSyncState, runSync } from '@/sync/engine';
 import { useProgress } from './progress';
@@ -31,6 +31,8 @@ interface SyncCtx {
   sendCode: (email: string) => Promise<void>;
   /** Supabase: verifies the emailed code. Dev mode: signs in directly (code ignored). */
   signIn: (email: string, code: string, opts?: { replaceLocal?: boolean }) => Promise<'ok' | 'other-account'>;
+  /** Google in the system browser. 'cancelled' if the browser was closed; repeat with replaceLocal after 'other-account'. */
+  signInWithGoogle: (opts?: { replaceLocal?: boolean }) => Promise<'ok' | 'other-account' | 'cancelled'>;
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
   exportData: () => Promise<unknown>;
@@ -129,9 +131,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     if (cloud.authMode === 'supabase') await requestCode(email.trim().toLowerCase());
   }, []);
 
-  const signIn = useCallback(
-    async (email: string, code: string, opts: { replaceLocal?: boolean } = {}) => {
-      const s = cloud.authMode === 'dev' ? await devSignIn(email.trim()) : await verifyCode(email.trim().toLowerCase(), code.trim());
+  /** Shared second half of every sign-in: owner check, persist, first backup, profile, sync. */
+  const adopt = useCallback(
+    async (s: Session, opts: { replaceLocal?: boolean }): Promise<'ok' | 'other-account'> => {
       // Never merge one person's local progress into another person's account.
       const owner = (await db.getFirstAsync<{ value: string }>('SELECT value FROM kv WHERE key = ?', OWNER_KEY))?.value;
       if (owner && owner !== s.userId) {
@@ -149,6 +151,39 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       return 'ok';
     },
     [db, loadProfile, syncNow],
+  );
+
+  const signIn = useCallback(
+    async (email: string, code: string, opts: { replaceLocal?: boolean } = {}) =>
+      adopt(cloud.authMode === 'dev' ? await devSignIn(email.trim()) : await verifyCode(email.trim().toLowerCase(), code.trim()), opts),
+    [adopt],
+  );
+
+  // A Google code is single-use, so a sign-in paused by the other-account question is kept until answered.
+  const pendingGoogle = useRef<{ session: Session; name: string } | null>(null);
+  const signInWithGoogle = useCallback(
+    async (opts: { replaceLocal?: boolean } = {}) => {
+      const g = (opts.replaceLocal && pendingGoogle.current) || (await googleSignIn());
+      pendingGoogle.current = null;
+      if (!g) return 'cancelled';
+      const r = await adopt(g.session, opts);
+      if (r === 'other-account') {
+        pendingGoogle.current = g;
+        return r;
+      }
+      // First Google sign-in: use the Google name unless the learner already chose one.
+      if (g.name) {
+        try {
+          const me = await api<Profile>(g.session, '/v1/me');
+          if (!me.displayName) await api(g.session, '/v1/me', { method: 'PATCH', body: { displayName: g.name.slice(0, 40) } });
+          await loadProfile();
+        } catch {
+          // Not critical: the name can be set later.
+        }
+      }
+      return r;
+    },
+    [adopt, loadProfile],
   );
 
   const signOut = useCallback(async () => {
@@ -188,6 +223,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         error,
         sendCode,
         signIn,
+        signInWithGoogle,
         signOut,
         syncNow,
         exportData,

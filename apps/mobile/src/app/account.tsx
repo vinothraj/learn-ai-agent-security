@@ -65,6 +65,21 @@ export default function Account() {
       }
     });
 
+  const doGoogle = (replaceLocal = false) =>
+    run(async () => {
+      const r = await s.signInWithGoogle({ replaceLocal });
+      if (r === 'other-account') {
+        Alert.alert(
+          'Progress from another account',
+          'This device holds progress from a different account. To protect privacy it can’t be merged. Remove it from this device and continue?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove and continue', style: 'destructive', onPress: () => doGoogle(true) },
+          ],
+        );
+      }
+    });
+
   const exportData = () =>
     run(async () => {
       const data = await s.exportData();
@@ -122,13 +137,20 @@ export default function Account() {
           <Row>
             <IconBadge icon={ShieldCheck} />
             <T style={{ flex: 1 }}>
-              We store only your email, display name and learning progress. No passwords: you sign in with a one-time code.
+              We store only your email, display name and learning progress. No passwords: sign in with Google or a one-time email code.
             </T>
           </Row>
         </Card>
         {devMode ? (
           <Tag label="DEVELOPER MODE: local test sign-in, no email is sent" color={theme.warning} />
-        ) : null}
+        ) : (
+          <>
+            <Button label={busy ? 'Please wait…' : 'Continue with Google'} disabled={busy} onPress={() => doGoogle()} />
+            <T muted style={{ textAlign: 'center' }}>
+              or use your email
+            </T>
+          </>
+        )}
         <T v="label" muted>
           EMAIL
         </T>

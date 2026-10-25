@@ -1,5 +1,7 @@
 import * as Crypto from 'expo-crypto';
+import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
 /**
@@ -63,7 +65,7 @@ interface SupabaseTokenResponse {
   access_token: string;
   refresh_token: string;
   expires_in: number;
-  user: { id: string; email: string };
+  user: { id: string; email: string; user_metadata?: { full_name?: string; name?: string } };
 }
 
 const toSession = (r: SupabaseTokenResponse): Session => ({
@@ -82,6 +84,38 @@ export async function requestCode(email: string): Promise<void> {
 /** Step 2: exchange the code for a session. */
 export async function verifyCode(email: string, code: string): Promise<Session> {
   return toSession(await postJson<SupabaseTokenResponse>(`${cloud.supabaseUrl}/auth/v1/verify`, { type: 'email', email, token: code }, { apikey: cloud.anonKey }));
+}
+
+/** Query and fragment parameters of a redirect URL (React Native's URLSearchParams is incomplete). */
+function redirectParams(url: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of url.split(/[?#]/).slice(1).join('&').split('&')) {
+    const [k, v = ''] = part.split('=');
+    if (k) out[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, ' '));
+  }
+  return out;
+}
+
+/**
+ * Google sign-in through Supabase OAuth with PKCE, in the system browser (no native Google SDK, so it also
+ * works in Expo Go). Supabase links it to the email-code account with the same address.
+ * Returns null if the person closes the browser. `name` is Google's display name, if shared.
+ */
+export async function googleSignIn(): Promise<{ session: Session; name: string } | null> {
+  const verifier = (Crypto.randomUUID() + Crypto.randomUUID()).replace(/-/g, '');
+  const challenge = (await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, verifier, { encoding: Crypto.CryptoEncoding.BASE64 }))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  const redirect = Linking.createURL('auth-callback');
+  const query = [`provider=google`, `redirect_to=${encodeURIComponent(redirect)}`, `code_challenge=${challenge}`, `code_challenge_method=s256`].join('&');
+  const result = await WebBrowser.openAuthSessionAsync(`${cloud.supabaseUrl}/auth/v1/authorize?${query}`, redirect);
+  if (result.type !== 'success') return null;
+  const params = redirectParams(result.url);
+  if (params.error_description || params.error) throw new Error(params.error_description || params.error);
+  if (!params.code) throw new Error('Google sign-in did not complete. Please try again.');
+  const r = await postJson<SupabaseTokenResponse>(`${cloud.supabaseUrl}/auth/v1/token?grant_type=pkce`, { auth_code: params.code, code_verifier: verifier }, { apikey: cloud.anonKey });
+  return { session: toSession(r), name: (r.user.user_metadata?.full_name ?? r.user.user_metadata?.name ?? '').trim() };
 }
 
 /** Local development: a stable user id derived from the email, so two devices share an account. */

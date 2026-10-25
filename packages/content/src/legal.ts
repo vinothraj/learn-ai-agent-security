@@ -41,6 +41,7 @@ export const PRIVACY_POLICY: LegalSection[] = [
     ],
     bullets: [
       'Your email address, to send one-time sign-in codes and identify your account',
+      'If you choose “Continue with Google”: the email address and name Google shares with us (we use the name as your display name only if you have not set one). We never see your Google password',
       'Your display name, if you set one',
       'Your synced progress records (the on-device items above, except interview answers)',
     ],
@@ -65,6 +66,8 @@ export const PRIVACY_POLICY: LegalSection[] = [
     paragraphs: ['We use these processors only to run the service, under their data-protection terms:'],
     bullets: [
       'Supabase (sign-in and database hosting)',
+      'Google (only if you sign in with Google)',
+      'Brevo (delivers sign-in code emails)',
       'Our API hosting provider',
       'Expo and Google Firebase Cloud Messaging (only if you enable push alerts)',
       'The configured AI provider (only for AI features you use)',
