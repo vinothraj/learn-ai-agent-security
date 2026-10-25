@@ -313,6 +313,16 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       ALTER FUNCTION audit_logs_immutable() SET search_path = '';
     `,
   },
+  {
+    // CISA's all.xml grew past the 2 MB fetch cap (5.7 MB, mostly ICS advisories); the
+    // cybersecurity-advisories feed carries the advisories we want and is about 1.4 MB.
+    id: '009_cisa_feed',
+    sql: `
+      UPDATE news_sources SET feed_url = 'https://www.cisa.gov/cybersecurity-advisories/cybersecurity-advisories.xml',
+        etag = NULL, last_modified = NULL
+      WHERE feed_url = 'https://www.cisa.gov/cybersecurity-advisories/all.xml';
+    `,
+  },
 ];
 
 export async function migrate(db: Db): Promise<string[]> {
