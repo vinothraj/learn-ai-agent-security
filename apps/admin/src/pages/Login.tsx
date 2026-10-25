@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, ErrorNote, Field, inputCls } from '../components/ui';
-import { auth, env, type Role } from '../lib/api';
+import { auth, env, magicLinkError, type Role } from '../lib/api';
 
 export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
   const [email, setEmail] = useState('');
@@ -8,7 +8,7 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
   const [devRole, setDevRole] = useState<Role>('super_admin');
   const [stage, setStage] = useState<'email' | 'code'>('email');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<unknown>(magicLinkError ? { message: magicLinkError } : null);
   const dev = env.authMode === 'dev';
 
   const run = async (fn: () => Promise<void>) => {
@@ -54,9 +54,12 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
           </Field>
         ) : null}
         {stage === 'code' ? (
-          <Field label="6-digit code">
-            <input className={inputCls} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
-          </Field>
+          <>
+            <p className="text-sm text-muted">Check your email. Enter the code, or open the sign-in link in this browser.</p>
+            <Field label="6-digit code">
+              <input className={inputCls} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+            </Field>
+          </>
         ) : null}
         <ErrorNote error={error} />
         <Button type="submit" className="w-full" disabled={busy || !email}>

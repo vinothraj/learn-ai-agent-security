@@ -37,6 +37,31 @@ export function setSession(s: Session | null) {
   else sessionStorage.removeItem(KEY);
 }
 
+/**
+ * Supabase's default email (no custom SMTP) holds a sign-in link, not a code. The link lands here with
+ * `#access_token=…&refresh_token=…&expires_in=…` (or `#error=…`). Take the tokens, then clear them from
+ * the address bar before the hash router runs. Returns an error message if the link was rejected.
+ */
+function consumeMagicLink(): string | null {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const token = params.get('access_token');
+  const error = params.get('error_description') ?? params.get('error');
+  if (!token && !error) return null;
+  history.replaceState(null, '', `${location.pathname}${location.search}#/`);
+  if (!token) return error;
+  try {
+    const payload = (token.split('.')[1] ?? '').replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(payload)) as { email?: string };
+    setSession({ accessToken: token, refreshToken: params.get('refresh_token'), expiresAt: Date.now() + Number(params.get('expires_in') ?? 3600) * 1000, email: claims.email ?? '' });
+    return null;
+  } catch {
+    return 'The sign-in link was not valid. Request a new one.';
+  }
+}
+
+/** Runs once at load, before the router reads the hash. */
+export const magicLinkError = consumeMagicLink();
+
 export class ApiError extends Error {
   constructor(
     public status: number,
