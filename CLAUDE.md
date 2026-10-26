@@ -70,6 +70,11 @@ Offline-first Android learning app for AI, GenAI and AI-agent security. The full
   Render API `https://laas-api-q5t1.onrender.com`, admin `https://laas-admin.onrender.com` (render.yaml blueprint).
   EAS production/preview env vars point at them from build 4. Email sign-in uses Brevo SMTP with 6-digit codes
   (key expires 2027-10-25 or after 90 idle days); the admin panel also accepts sign-in links.
+- **Play status (2026-10-26):** internal testing runs build **5** (Google sign-in + live backend). All App content
+  forms, Advertising ID (No), category Education, contact learnaiagentsecurity@gmail.com (no phone), store listing
+  (icon + feature graphic labelled AI-generated; 6 screenshots, 06-practice.png is blank) saved; not yet sent for
+  review. Production is locked until a closed test with 12+ testers for 14 days. Builds >10 MB can't be uploaded by
+  the browser tool: upload by hand or set up the Play service account for `eas submit`.
 - **Next: Phase 13** (Pro + community), only when asked.
 - **Plan:** 13 phases total (see MASTER_PROMPT §21); Phase 13 = Pro community, built last (§25).
 
