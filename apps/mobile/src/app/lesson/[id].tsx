@@ -9,7 +9,6 @@ import {
   MessageSquareText,
   ShieldAlert,
   ShieldCheck,
-  Target,
   Trophy,
   X,
 } from '@/components/icons';
@@ -18,6 +17,7 @@ import { Pressable, ScrollView, View, type ScrollViewInstance } from 'react-nati
 import Animated, { FadeInRight, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Illustration } from '@/components/art/Illustration';
 import { QuizQuestionView } from '@/components/QuizQuestionView';
 import { Button, Card, IconBadge, ProgressBar, Row, T, Tag } from '@/components/ui';
 import { awardXp, completeLesson, recordResponse, saveLessonStep } from '@/db/repo';
@@ -108,7 +108,7 @@ export default function LessonPlayer() {
       case 'objective':
         return (
           <View style={{ gap: space.lg }}>
-            <IconBadge icon={Target} size={52} />
+            <Illustration id={lesson.id} height={150} />
             <Row style={{ flexWrap: 'wrap', gap: 8 }}>
               <Tag label={lesson.level.toUpperCase()} />
               <Tag label={`${lesson.minutes} MIN`} color={theme.info} />

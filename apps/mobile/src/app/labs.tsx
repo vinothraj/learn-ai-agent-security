@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import { ChevronLeft, CircleCheck, Clock, FlaskConical, Star } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 
-import { Appear, Card, IconBadge, ProgressBar, Row, Screen, SectionTitle, T, Tag } from '@/components/ui';
+import { Illustration } from '@/components/art/Illustration';
+import { Appear, Card, ProgressBar, Row, Screen, SectionTitle, T, Tag } from '@/components/ui';
 import { useProgress } from '@/state/progress';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -54,7 +55,14 @@ export default function Labs() {
                 <Appear key={lab.id} index={i++}>
                   <Card onPress={() => router.push(`/lab/${lab.id}`)} accessibilityLabel={`${lab.title}${best?.passed ? `, passed with ${best.stars} stars` : ''}`}>
                     <Row style={{ alignItems: 'flex-start' }}>
-                      <IconBadge icon={best?.passed ? CircleCheck : FlaskConical} color={best?.passed ? theme.success : theme.accent} />
+                      <View>
+                        <Illustration id={lab.id} width={72} height={56} />
+                        {best?.passed ? (
+                          <View style={{ position: 'absolute', right: -6, bottom: -6, backgroundColor: theme.surface, borderRadius: 12, padding: 2 }}>
+                            <CircleCheck size={18} color={theme.success} />
+                          </View>
+                        ) : null}
+                      </View>
                       <View style={{ flex: 1, gap: 4 }}>
                         <Tag label={lab.category} color={theme.ringPractice} />
                         <T v="heading">{lab.title}</T>

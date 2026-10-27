@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, CircleCheck, Clock, Lock, Play } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 
+import { Illustration } from '@/components/art/Illustration';
 import { Appear, Card, ProgressBar, Row, Screen, T, Tag } from '@/components/ui';
 import { useProgress } from '@/state/progress';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -33,6 +34,7 @@ export default function RoadmapScreen() {
           <ChevronLeft size={28} color={theme.text} />
         </Pressable>
       }>
+      <Illustration id={roadmap.id} height={140} />
       <T muted>{roadmap.description}</T>
       {lessons.length > 0 ? (
         <View style={{ gap: 6 }}>
@@ -62,7 +64,12 @@ export default function RoadmapScreen() {
               accessibilityLabel={`${lesson.title}. ${done ? 'Completed' : unlocked ? 'Available' : 'Locked'}`}
               style={!unlocked && !done ? { opacity: 0.6 } : undefined}>
               <Row>
-                <Icon size={22} color={color} />
+                <View>
+                  <Illustration id={lesson.id} width={72} height={48} />
+                  <View style={{ position: 'absolute', right: -6, bottom: -6, backgroundColor: theme.surface, borderRadius: 12, padding: 2 }}>
+                    <Icon size={18} color={color} />
+                  </View>
+                </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T v="heading">{lesson.title}</T>
                   <Row style={{ gap: 8 }}>

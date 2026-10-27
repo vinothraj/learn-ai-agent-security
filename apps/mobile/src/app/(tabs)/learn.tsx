@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { ChevronRight, MessageCircleQuestion } from '@/components/icons';
 import { View } from 'react-native';
 
+import { Illustration } from '@/components/art/Illustration';
 import { Appear, Card, ProgressBar, Row, Screen, T, Tag } from '@/components/ui';
 import { useProgress } from '@/state/progress';
 import { useSettings } from '@/state/settings';
@@ -37,6 +38,7 @@ export default function Learn() {
               accent={r.id === settings.focusRoadmapId}
               onPress={() => router.push(`/roadmap/${r.id}`)}
               accessibilityLabel={`${r.title}, ${p.done} of ${p.total} lessons complete`}>
+              <Illustration id={r.id} height={96} />
               <Row>
                 <View
                   style={{
